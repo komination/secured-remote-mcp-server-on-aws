@@ -36,7 +36,4 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Ignore Terraform Cloud configuration files
-credentials.tfrc.json
-
 .env

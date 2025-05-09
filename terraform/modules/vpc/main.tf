@@ -8,41 +8,34 @@ module "vpc" {
   cidr = var.vpc_cidr
 
   azs = slice(data.aws_availability_zones.current.names, 0, 3)
-  public_subnets = [
-    cidrsubnet(var.vpc_cidr, 4, 0),
-    cidrsubnet(var.vpc_cidr, 4, 1),
-    cidrsubnet(var.vpc_cidr, 4, 2)
-  ]
-  intra_subnets = [
-    cidrsubnet(var.vpc_cidr, 4, 4),
-    cidrsubnet(var.vpc_cidr, 4, 5),
-    cidrsubnet(var.vpc_cidr, 4, 6)
-  ]
-  private_subnets = var.enable_nat_gateway ? [
-    cidrsubnet(var.vpc_cidr, 4, 8),
-    cidrsubnet(var.vpc_cidr, 4, 9),
-    cidrsubnet(var.vpc_cidr, 4, 10)
-  ] : []
 
-  # Lambda向け設定
+  public_subnets = [
+    cidrsubnet(var.vpc_cidr, 8, 0),
+    cidrsubnet(var.vpc_cidr, 8, 1),
+    cidrsubnet(var.vpc_cidr, 8, 2)
+  ]
+
+  private_subnets = [
+    cidrsubnet(var.vpc_cidr, 8, 3),
+    cidrsubnet(var.vpc_cidr, 8, 4),
+    cidrsubnet(var.vpc_cidr, 8, 5)
+  ]
+
   create_igw = true
+
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  enable_nat_gateway = var.enable_nat_gateway
-  single_nat_gateway = (
-    var.enable_nat_gateway
-    ? (var.one_nat_gateway_per_az ? false : true)
-    : false
-  )
-  one_nat_gateway_per_az = (
-    var.enable_nat_gateway
-    ? var.one_nat_gateway_per_az
-    : false
-  )
+  enable_nat_gateway     = false
 
   manage_default_security_group  = true
   default_security_group_ingress = []
-  default_security_group_egress  = []
-
+  default_security_group_egress  = [
+    {
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = "0.0.0.0/0"
+    }
+  ]
 }

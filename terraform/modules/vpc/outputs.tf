@@ -13,17 +13,17 @@ output "public_subnets" {
   value       = module.vpc.public_subnets
 }
 
-output "intra_subnets" {
-  description = "イントラサブネットの ID リスト"
-  value       = module.vpc.intra_subnets
-}
-
 output "vpc_cidr_block" {
   description = "VPC の CIDR ブロック"
   value       = module.vpc.vpc_cidr_block
 }
 
-output "nat_public_ips" {
-  description = "NAT Gateway の パブリック IP リスト"
-  value       = module.vpc.nat_public_ips
+output "private_route_table_ids" {
+  description = "プライベートルートテーブルの ID リスト"
+  value       = module.vpc.private_route_table_ids
+}
+
+output "aws_default_security_group_id" {
+  description = "デフォルトセキュリティグループの ID"
+  value       = module.vpc.default_security_group_id
 }

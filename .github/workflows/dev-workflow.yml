@@ -1,0 +1,82 @@
+name: build-and-deploy-lambda
+on:
+  workflow_dispatch:
+
+permissions:           # OIDC には必須
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      FUNC_KEY:  ${{ steps.out.outputs.func_key }}
+      LAYER_ARN: ${{ steps.out.outputs.layer_arn }}
+    env:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- OIDC で AWS 認証 ---------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/github-ci
+          aws-region: ap-northeast-1
+
+      # --- ビルド & ZIP ------------------------------
+      - name: Build layer & function
+        run: |
+          mkdir -p dist
+          pip install -r src/requirements.txt -t layer/python
+          zip -r dist/layer.zip layer
+          zip -r dist/function.zip src
+
+      # --- S3 へアップロード --------------------------
+      - name: Upload to S3 & publish layer
+        id: out
+        env:
+          BUCKET: aws-vpc-lambda-integration-dev
+          SHA: ${{ github.sha }}
+        run: |
+          FUNC_KEY=lambda-functions/dev/${SHA}.zip
+          LAYER_KEY=lambda-layers/dev/${SHA}.zip
+          aws s3 cp dist/function.zip s3://$BUCKET/$FUNC_KEY
+          aws s3 cp dist/layer.zip    s3://$BUCKET/$LAYER_KEY
+
+          LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name dev-my-lambda-layer \
+            --content S3Bucket=$BUCKET,S3Key=$LAYER_KEY \
+            --query LayerVersionArn --output text)
+
+          echo "func_key=$FUNC_KEY"   >> "$GITHUB_OUTPUT"
+          echo "layer_arn=$LAYER_ARN" >> "$GITHUB_OUTPUT"
+
+  terraform:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      WORKSPACE: ${{ secrets.WORKSPACE }}
+    steps:
+      # --- GitHub → HCP Terraform API ----------------
+      - name: Update lambda_s3_key variable
+        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1
+        with:
+          workspace: ${{ secrets.WORKSPACE }}
+          key: lambda_s3_key
+          value: ${{ needs.build.outputs.FUNC_KEY }}
+
+      - name: Update layer_arn variable
+        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1
+        with:
+          workspace: ${{ secrets.WORKSPACE }}
+          key: layer_arn
+          value: ${{ needs.build.outputs.LAYER_ARN }}
+
+      # - name: Create & apply run
+      #   uses: hashicorp/tfc-workflows-github/actions/create-run@v1
+      #   with:
+      #     workspace: dev
+      #     auto_apply: true

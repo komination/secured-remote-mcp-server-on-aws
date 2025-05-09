@@ -37,3 +37,7 @@ override.tf.json
 terraform.rc
 
 .env
+
+/src/layer
+.terraform-artifacts
+builds/

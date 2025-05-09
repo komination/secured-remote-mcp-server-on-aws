@@ -26,7 +26,7 @@ module "s3" {
 
 data "archive_file" "lambda_layer_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../src/layer"
+  source_dir  = "${path.module}/dummy"
   output_path = "${path.module}/.terraform-artifacts/layer.zip"
   excludes = [
     "*.pyc",
@@ -39,7 +39,7 @@ data "archive_file" "lambda_layer_zip" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../src"
+  source_dir  = "${path.module}/dummy"
   output_path = "${path.module}/.terraform-artifacts/lambda.zip"
   excludes = [
     "*.pyc",

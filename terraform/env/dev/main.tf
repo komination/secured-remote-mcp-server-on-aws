@@ -39,7 +39,7 @@ data "archive_file" "lambda_layer_zip" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/dummy"
+  source_dir  = "${path.module}/../../../src"
   output_path = "${path.module}/.terraform-artifacts/lambda.zip"
   excludes = [
     "*.pyc",

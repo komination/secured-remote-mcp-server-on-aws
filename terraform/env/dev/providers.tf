@@ -4,7 +4,7 @@ provider "aws" {
     tags = {
       Terraform   = "true"
       Environment = "dev"
-      Project     = "vpc-lambda-integration"
+      Project     = "aws-vpc-lambda-integration"
     }
   }
 }

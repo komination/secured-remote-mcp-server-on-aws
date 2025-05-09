@@ -24,4 +24,6 @@ module "lambda" {
   vpc_security_group_ids = [var.vpc_security_group_id]
   
   attach_network_policy = true
+
+  ignore_source_code_hash = true
 }

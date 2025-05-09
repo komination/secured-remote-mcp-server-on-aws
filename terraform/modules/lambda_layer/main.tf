@@ -11,4 +11,6 @@ module "lambda_layer_s3" {
 
   store_on_s3 = true
   s3_bucket   = var.s3_bucket_name
+
+  ignore_source_code_hash = true
 }

@@ -50,6 +50,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: develop
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ secrets.TF_WORKSPACE }}
     steps:
       - uses: actions/checkout@v4
       # ===== Plan & Run の作成 ===============================

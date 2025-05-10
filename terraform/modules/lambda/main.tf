@@ -14,6 +14,23 @@ module "lambda" {
     for key, value in var.environment_variables : key => value
   }
 
+  attach_policy_json = true
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = var.s3_bucket_arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${var.s3_bucket_arn}/*"
+      }
+    ]
+  })
+
   create_package = false
   s3_existing_package = {
     bucket = var.s3_bucket_name

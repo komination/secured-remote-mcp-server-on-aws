@@ -99,6 +99,7 @@ module "lambda" {
   runtime                   = "python3.13"
   s3_bucket_name            = module.s3.bucket_id
   s3_key                    = var.lambda_zip_key
+  s3_bucket_arn             = module.s3.bucket_arn
   layers                    = [module.lambda_layer.layer_arn]
   vpc_subnet_ids            = module.vpc.private_subnets
   vpc_security_group_id     = module.vpc.aws_default_security_group_id

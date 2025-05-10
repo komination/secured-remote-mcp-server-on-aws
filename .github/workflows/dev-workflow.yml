@@ -10,8 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      FUNC_KEY:  ${{ steps.out.outputs.func_key }}
-      LAYER_KEY: ${{ steps.out.outputs.layer_key }}
+      LAMBDA_ZIP_KEY:  ${{ steps.out.outputs.lambda_zip_key }}
+      LAMBDA_LAYER_ZIP_KEY: ${{ steps.out.outputs.lambda_layer_zip_key }}
     environment: develop
     steps:
       - uses: actions/checkout@v4
@@ -23,13 +23,39 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
           aws-region: ap-northeast-1
 
-      # --- ビルド & ZIP ------------------------------
-      - name: Build layer & function
+      # Cache pip
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('src/requirements.txt') }}
+
+      - name: mkdir dist
+        run: mkdir -p dist
+      
+      # --- Layer 依存インストール -------------------------
+      - name: Install dependencies into layer/python
         run: |
-          mkdir -p dist
-          pip install -r src/requirements.txt -t layer/python
-          zip -r dist/layer.zip layer
-          zip -r dist/function.zip src
+          python -m pip install --upgrade -r requirements.txt --target ../layer
+        working-directory: src
+
+      # --- ZIP 作成 --------------------------------------
+      - name: Package layer
+        run: zip -r ../dist/layer.zip .
+        working-directory: layer
+
+      - name: Package lambda
+        run: zip -r ../dist/lambda.zip .
+        working-directory: src
+
+      # # --- ビルド & ZIP ------------------------------
+      # - name: Build layer & lambda
+      #   run: |
+      #     mkdir -p dist/
+      #     pip install -r src/requirements.txt -t dist/
+      #     zip -r layer.zip dist/
+      #     zip -r lambda.zip src/
+
 
       # --- S3 へアップロード --------------------------
       - name: Upload to S3 & publish layer
@@ -38,13 +64,13 @@ jobs:
           BUCKET: aws-vpc-lambda-integration-dev
           SHA: ${{ github.sha }}
         run: |
-          FUNC_KEY=lambda-functions/${SHA}.zip
-          LAYER_KEY=lambda-layers/${SHA}.zip
-          aws s3 cp dist/function.zip s3://$BUCKET/$FUNC_KEY
-          aws s3 cp dist/layer.zip    s3://$BUCKET/$LAYER_KEY
+          LAMBDA_ZIP_KEY=lambda/${SHA}.zip
+          LAMBDA_LAYER_ZIP_KEY=lambda-layers/${SHA}.zip
+          aws s3 cp dist/function.zip s3://$BUCKET/$LAMBDA_ZIP_KEY
+          aws s3 cp dist/layer.zip    s3://$BUCKET/$LAMBDA_LAYER_ZIP_KEY
 
-          echo "func_key=$FUNC_KEY"   >> "$GITHUB_OUTPUT"
-          echo "layer_key=$LAYER_KEY" >> "$GITHUB_OUTPUT"
+          echo "lambda_zip_key=$LAMBDA_ZIP_KEY"   >> "$GITHUB_OUTPUT"
+          echo "lambda_layer_zip_key=$LAMBDA_LAYER_ZIP_KEY" >> "$GITHUB_OUTPUT"
 
   terraform:
     needs: build
@@ -64,8 +90,8 @@ jobs:
           workspace: ${{ secrets.TF_WORKSPACE }}
           message: "CI: deploy commit ${{ github.sha }}"
         env:
-          TF_VAR_lambda_zip_key:  ${{ toJSON(needs.build.outputs.FUNC_KEY) }}
-          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(needs.build.outputs.LAYER_KEY) }}
+          TF_VAR_lambda_zip_key:  ${{ toJSON(needs.build.outputs.LAMBDA_ZIP_KEY) }}
+          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(needs.build.outputs.LAMBDA_LAYER_ZIP_KEY) }}
 
       # ===== Apply (承認後) ==================================
       - name: Apply run

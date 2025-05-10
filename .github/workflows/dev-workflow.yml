@@ -2,7 +2,7 @@ name: build-and-deploy-lambda
 on:
   workflow_dispatch:
 
-permissions:           # OIDC には必須
+permissions:
   id-token: write
   contents: read
 
@@ -43,36 +43,28 @@ jobs:
           aws s3 cp dist/function.zip s3://$BUCKET/$FUNC_KEY
           aws s3 cp dist/layer.zip    s3://$BUCKET/$LAYER_KEY
 
-          LAYER_ARN=$(aws lambda publish-layer-version \
-            --layer-name dev-my-lambda-layer \
-            --content S3Bucket=$BUCKET,S3Key=$LAYER_KEY \
-            --query LayerVersionArn --output text)
-
           echo "func_key=$FUNC_KEY"   >> "$GITHUB_OUTPUT"
-          echo "layer_arn=$LAYER_ARN" >> "$GITHUB_OUTPUT"
+          echo "layer_key=$LAYER_KEY" >> "$GITHUB_OUTPUT"
 
   terraform:
     needs: build
     runs-on: ubuntu-latest
     environment: develop
     steps:
-      # --- GitHub → HCP Terraform API ----------------
-      - name: Update lambda_s3_key variable
-        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1.3.2
+      - uses: actions/checkout@v4
+      # ===== Plan & Run の作成 ===============================
+      - name: Create run on HCP Terraform
+        id: run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
         with:
-          workspace: ${{ secrets.WORKSPACE }}
-          key: lambda_s3_key
-          value: ${{ needs.build.outputs.FUNC_KEY }}
+          workspace: ${{ secrets.TF_WORKSPACE }}
+          message: "CI: deploy commit ${{ github.sha }}"
+        env:
+          TF_VAR_lambda_zip_key:  ${{ toJSON(needs.build.outputs.FUNC_KEY) }}
+          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(needs.build.outputs.LAYER_KEY) }}
 
-      - name: Update layer_arn variable
-        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1.3.2
+      # ===== Apply (承認後) ==================================
+      - name: Apply run
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
         with:
-          workspace: ${{ secrets.WORKSPACE }}
-          key: layer_arn
-          value: ${{ needs.build.outputs.LAYER_ARN }}
-
-      # - name: Create & apply run
-      #   uses: hashicorp/tfc-workflows-github/actions/create-run@v1
-      #   with:
-      #     workspace: dev
-      #     auto_apply: true
+          run: ${{ steps.run.outputs.run_id }}

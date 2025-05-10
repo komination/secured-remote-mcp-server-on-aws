@@ -66,7 +66,7 @@ jobs:
         run: |
           LAMBDA_ZIP_KEY=lambda/${SHA}.zip
           LAMBDA_LAYER_ZIP_KEY=lambda-layers/${SHA}.zip
-          aws s3 cp dist/function.zip s3://$BUCKET/$LAMBDA_ZIP_KEY
+          aws s3 cp dist/lambda.zip s3://$BUCKET/$LAMBDA_ZIP_KEY
           aws s3 cp dist/layer.zip    s3://$BUCKET/$LAMBDA_LAYER_ZIP_KEY
 
           echo "lambda_zip_key=$LAMBDA_ZIP_KEY"   >> "$GITHUB_OUTPUT"

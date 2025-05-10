@@ -3,14 +3,15 @@ module "lambda_layer_s3" {
   version = "7.20.2"
 
   create_layer = true
+  create_package = false
 
   layer_name          = var.layer_name
   compatible_runtimes = [var.runtime]
 
-  source_path = var.layer_source_path
-
-  store_on_s3 = true
-  s3_bucket   = var.s3_bucket_name
+  s3_existing_package = {
+    bucket = var.s3_bucket_name
+    key    = var.s3_key
+  }
 
   ignore_source_code_hash = true
 }

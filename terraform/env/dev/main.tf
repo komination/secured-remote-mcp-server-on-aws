@@ -4,6 +4,12 @@ module "vpc" {
   vpc_cidr = "10.0.0.0/16"
 }
 
+module "s3" {
+  source = "../../modules/s3"
+  bucket_name        = "aws-vpc-lambda-integration-dev"
+  enable_versioning  = true
+}
+
 module "vpc_endpoint_s3" {
   source          = "../../modules/vpc_endpoint_s3"
   vpc_id          = module.vpc.vpc_id
@@ -18,14 +24,9 @@ module "vpc_endpoint_lambda" {
   lambda_security_group_ids = [module.vpc.aws_default_security_group_id]
 }
 
-module "s3" {
-  source = "../../modules/s3"
-  bucket_name        = "aws-vpc-lambda-integration-dev"
-  enable_versioning  = false
-}
 
 data "archive_file" "lambda_layer_zip" {
-  count = local.is_dummy_deploy ? 0 : 1
+  count = local.is_dummy_deploy ? 1 : 0
   type        = "zip"
   source_dir  = "${path.module}/dummy"
   output_path = "${path.module}/.terraform-artifacts/layer.zip"
@@ -39,7 +40,7 @@ data "archive_file" "lambda_layer_zip" {
 }
 
 data "archive_file" "lambda_zip" {
-  count = local.is_dummy_deploy ? 0 : 1
+  count = local.is_dummy_deploy ? 1 : 0
   type        = "zip"
   source_dir  = "${path.module}/../../../src"
   output_path = "${path.module}/.terraform-artifacts/lambda.zip"
@@ -55,26 +56,28 @@ data "archive_file" "lambda_zip" {
 }
 
 resource "aws_s3_object" "lambda_layer_archive" {
-  count = local.is_dummy_deploy ? 0 : 1
+  count  = local.is_dummy_deploy ? 1 : 0
 
   bucket = module.s3.bucket_id
-  key    = "lambda-layers/dev-my-lambda-layer.zip"
-  source = data.archive_file.lambda_layer_zip.output_path
+  key    = var.lambda_layer_zip_key
 
-  depends_on = [ 
-    module.s3 
+  source = data.archive_file.lambda_layer_zip[count.index].output_path
+
+  depends_on = [
+    module.s3
   ]
 }
 
-resource "aws_s3_object" "lambda_function_archive" {
-  count = local.is_dummy_deploy ? 0 : 1
+resource "aws_s3_object" "lambda_archive" {
+  count  = local.is_dummy_deploy ? 1 : 0
 
   bucket = module.s3.bucket_id
-  key    = "lambda-functions/dev-my-lambda-fn.zip"
-  source = data.archive_file.lambda_zip.output_path
+  key    = var.lambda_zip_key
 
-  depends_on = [ 
-    module.s3 
+  source = data.archive_file.lambda_zip[count.index].output_path
+
+  depends_on = [
+    module.s3
   ]
 }
 
@@ -82,10 +85,10 @@ module "lambda_layer" {
   source             = "../../modules/lambda_layer"
   layer_name         = "dev-my-lambda-layer"
   runtime            = "python3.13"
-  layer_source_path  = var.lambda_layer_zip_key
   s3_bucket_name     = module.s3.bucket_id
+  s3_key             = var.lambda_layer_zip_key
   depends_on = [ 
-    aws_s3_object.lambda_layer_archive 
+    module.s3
   ]
 }
 
@@ -102,10 +105,7 @@ module "lambda" {
   environment_variables     = {
     "BUCKET_NAME" = module.s3.bucket_id
   }
-  depends_on = [ 
-    module.vpc, 
-    module.lambda_layer, 
-    module.vpc_endpoint_lambda, 
-    aws_s3_object.lambda_function_archive 
+  depends_on = [
+    module.lambda_layer
   ]
 }

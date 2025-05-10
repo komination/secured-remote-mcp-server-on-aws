@@ -3,6 +3,11 @@ variable "s3_bucket_name" {
   type        = string
 }
 
+variable "s3_key" {
+  description = "Lambda Layerのコードアップロード用S3オブジェクトキー"
+  type        = string
+}
+
 variable "runtime" {
   description = "実行ランタイム"
   type        = string
@@ -11,10 +16,5 @@ variable "runtime" {
 
 variable "layer_name" {
   description = "Lambda Layerの名前"
-  type        = string
-}
-
-variable "layer_source_path" {
-  description = "Lambda LayerのソースコードまたはZIPファイルへのパス"
   type        = string
 }

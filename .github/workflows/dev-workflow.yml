@@ -38,8 +38,8 @@ jobs:
           BUCKET: aws-vpc-lambda-integration-dev
           SHA: ${{ github.sha }}
         run: |
-          FUNC_KEY=lambda-functions/dev/${SHA}.zip
-          LAYER_KEY=lambda-layers/dev/${SHA}.zip
+          FUNC_KEY=lambda-functions/${SHA}.zip
+          LAYER_KEY=lambda-layers/${SHA}.zip
           aws s3 cp dist/function.zip s3://$BUCKET/$FUNC_KEY
           aws s3 cp dist/layer.zip    s3://$BUCKET/$LAYER_KEY
 
@@ -58,14 +58,14 @@ jobs:
     steps:
       # --- GitHub → HCP Terraform API ----------------
       - name: Update lambda_s3_key variable
-        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1
+        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1.3.2
         with:
           workspace: ${{ secrets.WORKSPACE }}
           key: lambda_s3_key
           value: ${{ needs.build.outputs.FUNC_KEY }}
 
       - name: Update layer_arn variable
-        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1
+        uses: hashicorp/tfc-workflows-github/actions/set-variable@v1.3.2
         with:
           workspace: ${{ secrets.WORKSPACE }}
           key: layer_arn

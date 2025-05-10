@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       FUNC_KEY:  ${{ steps.out.outputs.func_key }}
-      LAYER_ARN: ${{ steps.out.outputs.layer_arn }}
+      LAYER_KEY: ${{ steps.out.outputs.layer_key }}
     environment: develop
     steps:
       - uses: actions/checkout@v4

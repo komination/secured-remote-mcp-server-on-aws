@@ -25,6 +25,7 @@ module "s3" {
 }
 
 data "archive_file" "lambda_layer_zip" {
+  count = local.is_dummy_deploy ? 0 : 1
   type        = "zip"
   source_dir  = "${path.module}/dummy"
   output_path = "${path.module}/.terraform-artifacts/layer.zip"
@@ -38,6 +39,7 @@ data "archive_file" "lambda_layer_zip" {
 }
 
 data "archive_file" "lambda_zip" {
+  count = local.is_dummy_deploy ? 0 : 1
   type        = "zip"
   source_dir  = "${path.module}/../../../src"
   output_path = "${path.module}/.terraform-artifacts/lambda.zip"
@@ -53,6 +55,8 @@ data "archive_file" "lambda_zip" {
 }
 
 resource "aws_s3_object" "lambda_layer_archive" {
+  count = local.is_dummy_deploy ? 0 : 1
+
   bucket = module.s3.bucket_id
   key    = "lambda-layers/dev-my-lambda-layer.zip"
   source = data.archive_file.lambda_layer_zip.output_path
@@ -63,6 +67,8 @@ resource "aws_s3_object" "lambda_layer_archive" {
 }
 
 resource "aws_s3_object" "lambda_function_archive" {
+  count = local.is_dummy_deploy ? 0 : 1
+
   bucket = module.s3.bucket_id
   key    = "lambda-functions/dev-my-lambda-fn.zip"
   source = data.archive_file.lambda_zip.output_path
@@ -76,7 +82,7 @@ module "lambda_layer" {
   source             = "../../modules/lambda_layer"
   layer_name         = "dev-my-lambda-layer"
   runtime            = "python3.13"
-  layer_source_path  = data.archive_file.lambda_layer_zip.output_path
+  layer_source_path  = var.lambda_layer_zip_key
   s3_bucket_name     = module.s3.bucket_id
   depends_on = [ 
     aws_s3_object.lambda_layer_archive 
@@ -89,7 +95,7 @@ module "lambda" {
   handler                   = "lambda_function.lambda_handler"
   runtime                   = "python3.13"
   s3_bucket_name            = module.s3.bucket_id
-  s3_key                    = aws_s3_object.lambda_function_archive.key
+  s3_key                    = var.lambda_zip_key
   layers                    = [module.lambda_layer.layer_arn]
   vpc_subnet_ids            = module.vpc.private_subnets
   vpc_security_group_id     = module.vpc.aws_default_security_group_id

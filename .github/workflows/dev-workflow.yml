@@ -48,15 +48,6 @@ jobs:
         run: zip -r ../dist/lambda.zip .
         working-directory: src
 
-      # # --- ビルド & ZIP ------------------------------
-      # - name: Build layer & lambda
-      #   run: |
-      #     mkdir -p dist/
-      #     pip install -r src/requirements.txt -t dist/
-      #     zip -r layer.zip dist/
-      #     zip -r lambda.zip src/
-
-
       # --- S3 へアップロード --------------------------
       - name: Upload to S3 & publish layer
         id: out

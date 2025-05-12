@@ -38,6 +38,8 @@ terraform.rc
 
 .env
 
-/src/layer
+/src/deps
 .terraform-artifacts
 builds/
+.aws-sam/
+*.zip

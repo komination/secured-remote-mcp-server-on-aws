@@ -1,0 +1,10 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "sam-app"
+resolve_s3 = true
+s3_prefix = "sam-app"
+region = "ap-northeast-1"
+profile = "admin"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Stage=\"dev\" VpcCidr=\"10.0.0.0/16\""
+image_repositories = []

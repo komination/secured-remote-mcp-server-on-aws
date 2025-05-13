@@ -13,6 +13,11 @@ variable "s3_key" {
   type        = string
 }
 
+variable "s3_bucket_arn" {
+  description = "Lambda関数コードアップロード用S3バケットARN"
+  type        = string
+}
+
 variable "handler" {
   description = "Lambdaハンドラ"
   type        = string

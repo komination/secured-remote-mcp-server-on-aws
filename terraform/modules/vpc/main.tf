@@ -26,11 +26,11 @@ module "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  enable_nat_gateway     = false
+  enable_nat_gateway = false
 
   manage_default_security_group  = true
   default_security_group_ingress = []
-  default_security_group_egress  = [
+  default_security_group_egress = [
     {
       from_port   = 0
       to_port     = 0

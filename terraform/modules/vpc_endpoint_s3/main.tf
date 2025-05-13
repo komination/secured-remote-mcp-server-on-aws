@@ -14,12 +14,12 @@ resource "aws_vpc_endpoint" "s3" {
       {
         Effect    = "Allow"
         Principal = "*"
-        Action    = [
+        Action = [
           "s3:GetObject",
           "s3:PutObject",
           "s3:ListBucket"
         ]
-        Resource  = var.allowed_bucket_arns
+        Resource = var.allowed_bucket_arns
       }
     ]
   })

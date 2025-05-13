@@ -18,7 +18,8 @@
 				"DavidAnson.vscode-markdownlint",
 				"4ops.terraform",
 				"PKief.material-icon-theme",
-				"saoudrizwan.claude-dev"
+				"saoudrizwan.claude-dev",
+				"github.vscode-github-actions"
 			]
 		}
 	},

@@ -15,7 +15,7 @@ module "api_gateway" {
   authorizers = var.enable_cognito_auth ? {
     cognito = {
       name             = "${var.name}-cognito"
-      type             = "JWT"
+      authorizer_type = "JWT"
       identity_sources = ["\\$request.header.Authorization"]
       jwt_configuration = {
         audience = [var.cognito_user_pool_client_id]
@@ -23,13 +23,14 @@ module "api_gateway" {
       }
     }
   } : {}
-  target             = var.lambda_function_arn
+  
   routes = {
     "$default" = {
       authorization_type = var.enable_cognito_auth ? "JWT" : "NONE"
-      authorizer         = var.enable_cognito_auth ? "cognito" : null
+      authorizer_key     = var.enable_cognito_auth ? "cognito" : null
+
       integration = {
-        payload_format_version = "2.0"
+        uri                    = var.lambda_function_arn
       }
     }
   }

@@ -20,7 +20,6 @@ create-pull-request source_branch dist_branch title:
     gh pr create \
         --base {{source_branch}} \
         --head {{dist_branch}} \
-        --title {{title}} \
+        --title "{{title}}" \
         --body "" \
-        --label "" \
-        --assignee ""
+        --label ""

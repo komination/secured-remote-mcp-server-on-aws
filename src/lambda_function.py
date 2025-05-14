@@ -1,4 +1,5 @@
 import os
+import json
 import boto3
 
 s3 = boto3.client('s3')
@@ -18,7 +19,10 @@ def lambda_handler(event, context):
     
     return {
         'statusCode': 200,
-        'body': {
+        'headers': {
+            'Content-Type': 'application/json'
+        },
+        'body': json.dumps({
             'files': keys
-        }
+        })
     }

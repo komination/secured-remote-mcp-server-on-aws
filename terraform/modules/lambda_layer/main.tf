@@ -1,8 +1,8 @@
 module "lambda_layer_s3" {
-  source = "terraform-aws-modules/lambda/aws"
+  source  = "terraform-aws-modules/lambda/aws"
   version = "7.20.2"
 
-  create_layer = true
+  create_layer   = true
   create_package = false
 
   layer_name          = var.layer_name

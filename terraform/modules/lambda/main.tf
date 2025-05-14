@@ -1,12 +1,12 @@
 module "lambda" {
-  source = "terraform-aws-modules/lambda/aws"
+  source  = "terraform-aws-modules/lambda/aws"
   version = "7.20.2"
 
   function_name = var.function_name
-  
-  handler       = var.handler
-  runtime       = var.runtime
-  publish       = true
+
+  handler = var.handler
+  runtime = var.runtime
+  publish = true
 
   layers = var.layers
 
@@ -39,7 +39,7 @@ module "lambda" {
 
   vpc_subnet_ids         = var.vpc_subnet_ids
   vpc_security_group_ids = [var.vpc_security_group_id]
-  
+
   attach_network_policy = true
 
   ignore_source_code_hash = true

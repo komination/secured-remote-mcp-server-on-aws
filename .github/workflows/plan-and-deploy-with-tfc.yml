@@ -1,0 +1,28 @@
+name: 'Reusable Workflow: Plan and Deploy with TFC'
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: develop
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ secrets.TF_WORKSPACE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create run on HCP Terraform
+        id: run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        with:
+          workspace: ${{ secrets.TF_WORKSPACE }}
+          message: "CI: deploy commit ${{ github.sha }}"
+
+      - name: Apply run
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
+        with:
+          run: ${{ steps.run.outputs.run_id }}

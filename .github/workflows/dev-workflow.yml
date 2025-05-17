@@ -3,13 +3,23 @@ on:
   pull_request:
     branches:
       - develop
+    types: [closed]
 
+  workflow_dispatch:
+  
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  build:
+  validate_environment_secrets:
+    uses: ./.github/workflows/validate-environment-secrets.yml
+    secrets: inherit
+    with:
+      environment_name: develop
+
+  build-and-push:
+    needs: validate_environment_secrets
     runs-on: ubuntu-latest
     outputs:
       LAMBDA_ZIP_KEY:  ${{ steps.out.outputs.lambda_zip_key }}
@@ -66,7 +76,7 @@ jobs:
           echo "lambda_layer_zip_key=$LAMBDA_LAYER_ZIP_KEY" >> "$GITHUB_OUTPUT"
 
   terraform:
-    needs: build
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: develop
     env:
@@ -83,8 +93,8 @@ jobs:
           workspace: ${{ secrets.TF_WORKSPACE }}
           message: "CI: deploy commit ${{ github.sha }}"
         env:
-          TF_VAR_lambda_zip_key:  ${{ toJSON(needs.build.outputs.LAMBDA_ZIP_KEY) }}
-          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(needs.build.outputs.LAMBDA_LAYER_ZIP_KEY) }}
+          TF_VAR_lambda_zip_key:  ${{ toJSON(needs.build-and-push.outputs.LAMBDA_ZIP_KEY) }}
+          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(needs.build-and-push.outputs.LAMBDA_LAYER_ZIP_KEY) }}
 
       # ===== Apply (承認後) ==================================
       - name: Apply run

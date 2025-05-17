@@ -60,18 +60,18 @@ module "cognito" {
 }
 
 module "api_gateway" {
-  source                       = "../../modules/api_gateway"
-  name                         = "dev-api"
-  description                  = "Dev environment API"
-  lambda_function_arn          = module.lambda.function_arn
-  cors_configuration           = {
+  source              = "../../modules/api_gateway"
+  name                = "dev-api"
+  description         = "Dev environment API"
+  lambda_function_arn = module.lambda.function_arn
+  cors_configuration = {
     allow_headers  = ["*"]
-    allow_methods  = ["GET","POST","OPTIONS"]
+    allow_methods  = ["GET", "POST", "OPTIONS"]
     allow_origins  = ["*"]
     expose_headers = []
     max_age        = 0
   }
-  enable_cognito_auth          = true
-  cognito_user_pool_id         = module.cognito.user_pool_id
-  cognito_user_pool_client_id  = module.cognito.user_pool_client_id
+  enable_cognito_auth         = true
+  cognito_user_pool_id        = module.cognito.user_pool_id
+  cognito_user_pool_client_id = module.cognito.user_pool_client_id
 }

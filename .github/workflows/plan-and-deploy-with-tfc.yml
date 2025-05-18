@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  terraform:
+  plan-and-apply:
     runs-on: ubuntu-latest
     environment: develop
     env:

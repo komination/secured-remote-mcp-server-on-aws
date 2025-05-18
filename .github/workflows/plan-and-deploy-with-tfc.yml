@@ -2,6 +2,15 @@ name: 'Reusable Workflow: Plan and Deploy with TFC'
 
 on:
   workflow_call:
+    inputs:
+      LAMBDA_ZIP_KEY:
+        required: false
+        default: null
+        type: string
+      LAMBDA_LAYER_ZIP_KEY:
+        required: false
+        default: null
+        type: string
   workflow_dispatch:
 
 jobs:
@@ -21,6 +30,9 @@ jobs:
         with:
           workspace: ${{ secrets.TF_WORKSPACE }}
           message: "CI: deploy commit ${{ github.sha }}"
+        env:
+          TF_VAR_lambda_zip_key:  ${{ toJSON(inputs.LAMBDA_ZIP_KEY) }}
+          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(inputs.LAMBDA_LAYER_ZIP_KEY) }}
 
       - name: Apply run
         uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2

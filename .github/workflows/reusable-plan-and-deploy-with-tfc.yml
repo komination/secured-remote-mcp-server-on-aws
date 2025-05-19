@@ -48,7 +48,7 @@ jobs:
         env:
           TF_VAR_lambda_zip_key:        ${{ toJSON(inputs.LAMBDA_ZIP_KEY) }}
           TF_VAR_lambda_layer_zip_key:  ${{ toJSON(inputs.LAMBDA_LAYER_ZIP_KEY) }}
-          TF_VAR_AWS_S3_ARTIFACT_BUCKET_NAME: ${{ toJSON(secrets.AWS_S3_ARTIFACT_BUCKET_NAME) }}
+          TF_VAR_artifacts_bucket_name: ${{ toJSON(secrets.AWS_S3_ARTIFACT_BUCKET_NAME) }}
 
       - name: Apply run
         id: apply

@@ -62,5 +62,5 @@ jobs:
           BUCKET: ${{secrets.AWS_S3_ARTIFACT_BUCKET_NAME}}
           SHA: ${{ github.sha }}
         run: |
-          aws s3 cp dist/lambda.zip s3://$BUCKET/${{inputs.LAMBDA_ZIP_KEY}}.zip
-          aws s3 cp dist/layer.zip s3://$BUCKET/${{inputs.LAMBDA_LAYER_ZIP_KEY}}.zip
+          aws s3 cp dist/lambda.zip s3://$BUCKET/${{inputs.LAMBDA_ZIP_KEY}}
+          aws s3 cp dist/layer.zip s3://$BUCKET/${{inputs.LAMBDA_LAYER_ZIP_KEY}}

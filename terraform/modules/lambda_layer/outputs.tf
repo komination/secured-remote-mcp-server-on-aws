@@ -7,5 +7,5 @@ output "layer_arn" {
 
 output "layer_name" {
   description = "作成したLambda Layerの名前"
-  value       = module.lambda_layer_s3.s3_object
+  value       = module.lambda_layer_s3.lambda_function_name
 }

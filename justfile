@@ -16,10 +16,10 @@ build-layer-zip:
     cd ./deps && \
     zip -r /app/sam/layer.zip .
 
-create-pull-request source_branch dist_branch title:
+pr-create head_branch base_branch title:
     gh pr create \
-        --base {{source_branch}} \
-        --head {{dist_branch}} \
+        --base {{base_branch}} \
+        --head {{head_branch}} \
         --title "{{title}}" \
         --body "" \
         --label ""

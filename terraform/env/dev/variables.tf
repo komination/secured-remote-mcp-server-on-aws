@@ -11,3 +11,10 @@ variable "lambda_layer_zip_key" {
   default     = "lambda-layers/dev-my-lambda-layer-dummy.zip"
   nullable    = false
 }
+
+variable "artifacts_bucket_name" {
+  description = "S3 bucket for storing artifacts"
+  type        = string
+  default     = null
+  nullable    = true
+}

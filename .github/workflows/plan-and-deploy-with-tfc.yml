@@ -21,6 +21,7 @@ jobs:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ secrets.TF_WORKSPACE }}
+      AWS_S3_ARTIFACT_BUCKET_NAME: ${{ secrets.AWS_S3_ARTIFACT_BUCKET_NAME }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +34,7 @@ jobs:
         env:
           TF_VAR_lambda_zip_key:  ${{ toJSON(inputs.LAMBDA_ZIP_KEY) }}
           TF_VAR_lambda_layer_zip_key:  ${{ toJSON(inputs.LAMBDA_LAYER_ZIP_KEY) }}
+          TF_VAR_AWS_S3_ARTIFACT_BUCKET_NAME:  ${{ toJSON(secrets.AWS_S3_ARTIFACT_BUCKET_NAME) }}
 
       - name: Apply run
         uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2

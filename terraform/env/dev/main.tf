@@ -28,7 +28,7 @@ module "lambda_layer" {
   source         = "../../modules/lambda_layer"
   layer_name     = "dev-my-lambda-layer"
   runtime        = "python3.13"
-  s3_bucket_name = local.has_artifacts_bucket ? var.artifacts_bucket_name : module.s3.bucket_name
+  s3_bucket_name = local.has_artifacts_bucket ? var.artifacts_bucket_name : module.s3.bucket_id
   s3_key         = var.lambda_layer_zip_key
   depends_on = [
     module.s3
@@ -40,7 +40,7 @@ module "lambda" {
   function_name         = "dev-my-lambda-fn"
   handler               = "lambda_function.lambda_handler"
   runtime               = "python3.13"
-  s3_bucket_name        = local.has_artifacts_bucket ? var.artifacts_bucket_name : module.s3.bucket_name
+  s3_bucket_name        = local.has_artifacts_bucket ? var.artifacts_bucket_name : module.s3.bucket_id
   s3_key                = var.lambda_zip_key
   s3_bucket_arn         = module.s3.bucket_arn
   layers                = [module.lambda_layer.layer_arn]

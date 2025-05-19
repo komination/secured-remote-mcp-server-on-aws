@@ -31,7 +31,10 @@ jobs:
     outputs:
       lambda_function_name: ${{ steps.extract.outputs.lambda_function_name }}
       lambda_layer_name:   ${{ steps.extract.outputs.lambda_layer_name }}
-
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ secrets.TF_DEV_WORKSPACE }}
     steps:
       # --- ② usual: checkout / create-run / apply-run -----------------
       - uses: actions/checkout@v4

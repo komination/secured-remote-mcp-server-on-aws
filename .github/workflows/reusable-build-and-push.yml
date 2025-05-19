@@ -1,11 +1,15 @@
 name: 'Reusable Workflow: Build and Push Lambda'
 on:
   workflow_call:
-    outputs:
+    inputs:
         LAMBDA_ZIP_KEY:
-          value: ${{ jobs.build-and-push.outputs.LAMBDA_ZIP_KEY }}
+          description: "S3 key for the Lambda function zip"
+          required: true
+          type: string
         LAMBDA_LAYER_ZIP_KEY:
-          value: ${{ jobs.build-and-push.outputs.LAMBDA_LAYER_ZIP_KEY }}
+          description: "S3 key for the Lambda layer zip"
+          required: true
+          type: string
   workflow_dispatch:
 
 permissions:
@@ -15,9 +19,6 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      LAMBDA_ZIP_KEY:  ${{ steps.out.outputs.lambda_zip_key }}
-      LAMBDA_LAYER_ZIP_KEY: ${{ steps.out.outputs.lambda_layer_zip_key }}
     environment: develop
     steps:
       - uses: actions/checkout@v4
@@ -61,10 +62,5 @@ jobs:
           BUCKET: ${{secrets.AWS_S3_ARTIFACT_BUCKET_NAME}}
           SHA: ${{ github.sha }}
         run: |
-          LAMBDA_ZIP_KEY=lambda/${SHA}.zip
-          LAMBDA_LAYER_ZIP_KEY=lambda-layers/${SHA}.zip
-          aws s3 cp dist/lambda.zip s3://$BUCKET/$LAMBDA_ZIP_KEY
-          aws s3 cp dist/layer.zip    s3://$BUCKET/$LAMBDA_LAYER_ZIP_KEY
-
-          echo "lambda_zip_key=$LAMBDA_ZIP_KEY"   >> "$GITHUB_OUTPUT"
-          echo "lambda_layer_zip_key=$LAMBDA_LAYER_ZIP_KEY" >> "$GITHUB_OUTPUT"
+          aws s3 cp dist/lambda.zip s3://$BUCKET/${{inputs.LAMBDA_ZIP_KEY}}.zip
+          aws s3 cp dist/layer.zip s3://$BUCKET/${{inputs.LAMBDA_LAYER_ZIP_KEY}}.zip

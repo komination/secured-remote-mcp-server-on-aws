@@ -18,22 +18,49 @@ jobs:
     with:
       environment_name: develop
 
-  tfc-run:
+  set-outputs:
     needs: validate-environment-secrets
-    uses: ./.github/workflows/reusable-plan-and-deploy-with-tfc.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    outputs:
+      LAMBDA_ZIP_KEY: ${{ steps.out.outputs.LAMBDA_ZIP_KEY }}
+      LAMBDA_LAYER_ZIP_KEY: ${{ steps.out.outputs.LAMBDA_LAYER_ZIP_KEY }}
+    env:
+      lambda_function_name: lambda/${{ github.sha }}.zip
+      lambda_layer_name:   lambda-layers/${{ github.sha }}.zip
+    steps:
+      - name: Set Lambda Outputs
+        id: out
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          echo "LAMBDA_ZIP_KEY=$lambda_function_name" >> $GITHUB_ENV
+          echo "LAMBDA_LAYER_ZIP_KEY=$lambda_layer_name" >> $GITHUB_ENV
+          echo "::set-output name=LAMBDA_ZIP_KEY::$lambda_function_name"
+          echo "::set-output name=LAMBDA_LAYER_ZIP_KEY::$lambda_layer_name"
+
 
   build-and-push:
-    needs: tfc-run
+    needs: set-outputs
     uses: ./.github/workflows/reusable-build-and-push.yml
     secrets: inherit
+    with:
+      LAMBDA_ZIP_KEY: ${{needs.set-outputs.outputs.LAMBDA_ZIP_KEY }}
+      LAMBDA_LAYER_ZIP_KEY: ${{needs.set-outputs.outputs.LAMBDA_LAYER_ZIP_KEY }}
+
+  tfc-run:
+    needs: [build-and-push, set-outputs]
+    uses: ./.github/workflows/reusable-plan-and-deploy-with-tfc.yml
+    secrets: inherit
+    with:
+      LAMBDA_ZIP_KEY: ${{needs['set-outputs'].outputs.LAMBDA_ZIP_KEY }}
+      LAMBDA_LAYER_ZIP_KEY: ${{needs['set-outputs'].outputs.LAMBDA_LAYER_ZIP_KEY }}
 
   update-lambda:
-    needs: [tfc-run, build-and-push]
+    needs: [tfc-run, set-outputs]
     uses: ./.github/workflows/reusable-update-lambda.yml
-    with:
-      lambda_function_name: ${{ needs['tfc-run'].outputs.lambda_function_name }}
-      lambda_layer_name: ${{ needs['tfc-run'].outputs.lambda_layer_name }}
-      lambda_zip_key: ${{ needs['build-and-push'].outputs.LAMBDA_ZIP_KEY }}
-      lambda_layer_zip_key: ${{ needs['build-and-push'].outputs.LAMBDA_LAYER_ZIP_KEY }}
     secrets: inherit
+    with:
+      lambda_function_name: ${{ needs.tfc-run.outputs.lambda_function_name }}
+      lambda_layer_name: ${{ needs.tfc-run.outputs.lambda_layer_name }}
+      lambda_zip_key: ${{ needs['set-outputs'].outputs.LAMBDA_ZIP_KEY }}
+      lambda_layer_zip_key: ${{ needs['set-outputs'].outputs.LAMBDA_LAYER_ZIP_KEY }}

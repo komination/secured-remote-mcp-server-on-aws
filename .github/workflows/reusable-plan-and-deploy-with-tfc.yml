@@ -18,10 +18,6 @@ on:
       lambda_layer_name:
         description: "Name of the Lambda layer to publish"
         value: ${{ jobs.plan-and-apply.outputs.lambda_layer_name }}
-    secrets:
-      AWS_S3_ARTIFACT_BUCKET_NAME:
-        required: false
-        description: 'S3 bucket name for storing artifacts.'
   workflow_dispatch:
 
 jobs:
@@ -35,6 +31,7 @@ jobs:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ secrets.TF_DEV_WORKSPACE }}
+      AWS_S3_ARTIFACT_BUCKET_NAME: ${{ secrets.AWS_S3_ARTIFACT_BUCKET_NAME }}
     steps:
       # --- ② usual: checkout / create-run / apply-run -----------------
       - uses: actions/checkout@v4
@@ -48,7 +45,7 @@ jobs:
         env:
           TF_VAR_lambda_zip_key:        ${{ toJSON(inputs.LAMBDA_ZIP_KEY) }}
           TF_VAR_lambda_layer_zip_key:  ${{ toJSON(inputs.LAMBDA_LAYER_ZIP_KEY) }}
-          TF_VAR_artifacts_bucket_name: ${{ toJSON(secrets.AWS_S3_ARTIFACT_BUCKET_NAME) }}
+          TF_VAR_artifacts_bucket_name: ${{ toJSON(env.AWS_S3_ARTIFACT_BUCKET_NAME) }}
 
       - name: Apply run
         id: apply
@@ -69,7 +66,7 @@ jobs:
         shell: bash
         run: |
           # ----- ① ワークスペース出力(JSON)を受け取る --------------------
-          json="${{ steps.tf_outputs.outputs['outputs-json'] }}"
+          json="${{ toJson(steps.tf_outputs.outputs.outputs) }}"
 
           # ----- ② 必要な値だけを抜き出して step-output に書き込む --------
           echo "lambda_function_name=$(jq -r '.lambda_function_name.value'  <<<"$json")" >> "$GITHUB_OUTPUT"

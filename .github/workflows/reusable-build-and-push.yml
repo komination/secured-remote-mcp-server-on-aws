@@ -1,8 +1,13 @@
 name: 'Reusable Workflow: Build and Push Lambda'
 on:
-    workflow_call:
-    workflow_dispatch:
-  
+  workflow_call:
+    outputs:
+        LAMBDA_ZIP_KEY:
+          value: ${{ jobs.build-and-push.outputs.LAMBDA_ZIP_KEY }}
+        LAMBDA_LAYER_ZIP_KEY:
+          value: ${{ jobs.build-and-push.outputs.LAMBDA_LAYER_ZIP_KEY }}
+  workflow_dispatch:
+
 permissions:
   id-token: write
   contents: read
@@ -22,7 +27,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
-          aws-region: ap-northeast-1
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
 
       # Cache pip
       - name: Cache pip

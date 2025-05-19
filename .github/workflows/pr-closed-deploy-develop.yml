@@ -1,0 +1,39 @@
+name: 'CD: Deploy to develop on PR close'
+
+on:
+  pull_request:
+    branches:
+      - develop
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-environment-secrets:
+    uses: ./.github/workflows/reusable-validate-environment-secrets.yml
+    secrets: inherit
+    with:
+      environment_name: develop
+
+  tfc-run:
+    needs: validate-environment-secrets
+    uses: ./.github/workflows/reusable-plan-and-deploy-with-tfc.yml
+    secrets: inherit
+
+  build-and-push:
+    needs: tfc-run
+    uses: ./.github/workflows/reusable-build-and-push.yml
+    secrets: inherit
+
+  update-lambda:
+    needs: [tfc-run, build-and-push]
+    uses: ./.github/workflows/reusable-update-lambda.yml
+    with:
+      lambda_function_name: ${{ needs['tfc-run'].outputs.lambda_function_name }}
+      lambda_layer_name: ${{ needs['tfc-run'].outputs.lambda_layer_name }}
+      lambda_zip_key: ${{ needs['build-and-push'].outputs.LAMBDA_ZIP_KEY }}
+      lambda_layer_zip_key: ${{ needs['build-and-push'].outputs.LAMBDA_LAYER_ZIP_KEY }}
+    secrets: inherit

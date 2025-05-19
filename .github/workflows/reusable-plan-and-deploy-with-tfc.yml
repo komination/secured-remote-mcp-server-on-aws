@@ -1,0 +1,73 @@
+name: 'Reusable Workflow: Plan and Deploy with TFC'
+
+on:
+  workflow_call:
+    inputs:
+      LAMBDA_ZIP_KEY:
+        required: false
+        default: null
+        type: string
+      LAMBDA_LAYER_ZIP_KEY:
+        required: false
+        default: null
+        type: string
+    outputs:
+      lambda_function_name:
+        description: "Name of the Lambda function to update"
+        value: ${{ jobs.plan-and-apply.outputs.lambda_function_name }}
+      lambda_layer_name:
+        description: "Name of the Lambda layer to publish"
+        value: ${{ jobs.plan-and-apply.outputs.lambda_layer_name }}
+    secrets:
+      AWS_S3_ARTIFACT_BUCKET_NAME:
+        required: false
+        description: 'S3 bucket name for storing artifacts.'
+  workflow_dispatch:
+
+jobs:
+  plan-and-apply:
+    runs-on: ubuntu-latest
+    environment: develop
+    outputs:
+      lambda_function_name: ${{ steps.extract.outputs.lambda_function_name }}
+      lambda_layer_name:   ${{ steps.extract.outputs.lambda_layer_name }}
+
+    steps:
+      # --- ② usual: checkout / create-run / apply-run -----------------
+      - uses: actions/checkout@v4
+
+      - name: Create run on HCP Terraform
+        id: plan
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        with:
+          workspace: ${{ secrets.TF_DEV_WORKSPACE }}
+          message: "Commit Hash: ${{ github.sha }}"
+        env:
+          TF_VAR_lambda_zip_key:        ${{ toJSON(inputs.LAMBDA_ZIP_KEY) }}
+          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(inputs.LAMBDA_LAYER_ZIP_KEY) }}
+          TF_VAR_AWS_S3_ARTIFACT_BUCKET_NAME: ${{ toJSON(secrets.AWS_S3_ARTIFACT_BUCKET_NAME) }}
+
+      - name: Apply run
+        id: apply
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
+        with:
+          run: ${{ steps.plan.outputs.run_id }}
+
+      # --- ③ apply 完了後に output を取得 ---------------------------
+      - name: Fetch workspace outputs
+        id: tf_outputs
+        uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.3.2
+        with:
+          workspace: ${{ secrets.TF_DEV_WORKSPACE }}
+
+      # --- ④ 取り出した JSON を分解して step-output に書き出す ---------
+      - name: Set individual outputs
+        id: extract
+        shell: bash
+        run: |
+          # ----- ① ワークスペース出力(JSON)を受け取る --------------------
+          json="${{ steps.tf_outputs.outputs['outputs-json'] }}"
+
+          # ----- ② 必要な値だけを抜き出して step-output に書き込む --------
+          echo "lambda_function_name=$(jq -r '.lambda_function_name.value'  <<<"$json")" >> "$GITHUB_OUTPUT"
+          echo "lambda_layer_name=$(jq -r '.lambda_layer_name.value'       <<<"$json")" >> "$GITHUB_OUTPUT"

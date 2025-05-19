@@ -13,14 +13,13 @@ permissions:
 
 jobs:
   validate_environment_secrets:
-    uses: ./.github/workflows/validate-environment-secrets.yml
+    uses: ./.github/workflows/reusable-validate-environment-secrets.yml
     secrets: inherit
     with:
       environment_name: develop
 
   build-and-push:
     needs: validate_environment_secrets
-    uses: ./.github/workflows/build-and-push.yml
+    uses: ./.github/workflows/reusable-build-and-push.yml
     secrets: inherit
-    
-  
+

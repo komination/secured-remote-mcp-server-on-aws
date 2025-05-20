@@ -8,19 +8,16 @@ on:
                 type: string
             lambda_layer_arn:
                 description: "ARN of the Lambda layer version to use (skip publishing)"
-                required: false
-                default: ""
+                required: true
                 type: string
 
             lambda_zip_key:
                 description: "S3 key for the Lambda function zip"
-                required: false
-                default: ""
+                required: true
                 type: string
             lambda_layer_zip_key:
                 description: "S3 key for the Lambda layer zip"
-                required: false
-                default: ""
+                required: true
                 type: string
 permissions:
   id-token: write

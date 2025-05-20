@@ -6,10 +6,12 @@ on:
                 description: "Name of the Lambda function to update"
                 required: true
                 type: string
-            lambda_layer_name:
-                description: "Name of the Lambda layer to publish"
-                required: true
+            lambda_layer_arn:
+                description: "ARN of the Lambda layer version to use (skip publishing)"
+                required: false
+                default: ""
                 type: string
+
             lambda_zip_key:
                 description: "S3 key for the Lambda function zip"
                 required: false
@@ -20,7 +22,6 @@ on:
                 required: false
                 default: ""
                 type: string
-
 permissions:
   id-token: write
   contents: read
@@ -44,7 +45,7 @@ jobs:
         if: ${{ inputs.lambda_layer_zip_key != '' }}
         run: |
           LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
-            --layer-name ${{ inputs.lambda_layer_name }} \
+            --layer-name ${{ inputs.lambda_layer_arn }} \
             --content S3Bucket=${{ env.BUCKET }},S3Key=${{ inputs.lambda_layer_zip_key }} \
             --query 'LayerVersionArn' --output text)
           echo "layer_arn=$LAYER_VERSION_ARN" >> $GITHUB_OUTPUT

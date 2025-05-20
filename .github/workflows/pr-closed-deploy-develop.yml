@@ -18,7 +18,7 @@ jobs:
     with:
       environment_name: develop
 
-  set-outputs:
+  set-pipeline-variables:
     needs: validate-environment-secrets
     runs-on: ubuntu-latest
     outputs:
@@ -35,32 +35,30 @@ jobs:
         run: |
           echo "LAMBDA_ZIP_KEY=$lambda_function_name" >> $GITHUB_ENV
           echo "LAMBDA_LAYER_ZIP_KEY=$lambda_layer_name" >> $GITHUB_ENV
-          echo "::set-output name=LAMBDA_ZIP_KEY::$lambda_function_name"
-          echo "::set-output name=LAMBDA_LAYER_ZIP_KEY::$lambda_layer_name"
 
 
   build-and-push:
-    needs: set-outputs
+    needs: set-pipeline-variables
     uses: ./.github/workflows/reusable-build-and-push.yml
     secrets: inherit
     with:
-      LAMBDA_ZIP_KEY: ${{needs.set-outputs.outputs.LAMBDA_ZIP_KEY }}
-      LAMBDA_LAYER_ZIP_KEY: ${{needs.set-outputs.outputs.LAMBDA_LAYER_ZIP_KEY }}
+      LAMBDA_ZIP_KEY: ${{needs.set-pipeline-variables.outputs.LAMBDA_ZIP_KEY }}
+      LAMBDA_LAYER_ZIP_KEY: ${{needs.set-pipeline-variables.outputs.LAMBDA_LAYER_ZIP_KEY }}
 
   tfc-run:
-    needs: [build-and-push, set-outputs]
+    needs: [build-and-push, set-pipeline-variables]
     uses: ./.github/workflows/reusable-plan-and-deploy-with-tfc.yml
     secrets: inherit
     with:
-      LAMBDA_ZIP_KEY: ${{needs['set-outputs'].outputs.LAMBDA_ZIP_KEY }}
-      LAMBDA_LAYER_ZIP_KEY: ${{needs['set-outputs'].outputs.LAMBDA_LAYER_ZIP_KEY }}
+      LAMBDA_ZIP_KEY: ${{needs.set-pipeline-variables.outputs.LAMBDA_ZIP_KEY }}
+      LAMBDA_LAYER_ZIP_KEY: ${{needs.set-pipeline-variables.outputs.LAMBDA_LAYER_ZIP_KEY }}
 
   update-lambda:
-    needs: [tfc-run, set-outputs]
+    needs: [tfc-run, set-pipeline-variables]
     uses: ./.github/workflows/reusable-update-lambda.yml
     secrets: inherit
     with:
       lambda_function_name: ${{ needs.tfc-run.outputs.lambda_function_name }}
-      lambda_layer_name: ${{ needs.tfc-run.outputs.lambda_layer_name }}
-      lambda_zip_key: ${{ needs['set-outputs'].outputs.LAMBDA_ZIP_KEY }}
-      lambda_layer_zip_key: ${{ needs['set-outputs'].outputs.LAMBDA_LAYER_ZIP_KEY }}
+      lambda_layer_arn: ${{ needs.tfc-run.outputs.lambda_layer_arn }}
+      lambda_zip_key: ${{ needs.set-pipeline-variables.outputs.LAMBDA_ZIP_KEY }}
+      lambda_layer_zip_key: ${{ needs.set-pipeline-variables.outputs.LAMBDA_LAYER_ZIP_KEY }}

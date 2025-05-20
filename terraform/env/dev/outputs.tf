@@ -3,6 +3,6 @@ output "lambda_function_name" {
 
 }
 
-output "lambda_function_arn" {
-  value = module.lambda.function_arn
+output "lambda_layer_arn" {
+  value = module.lambda_layer.layer_arn
 }

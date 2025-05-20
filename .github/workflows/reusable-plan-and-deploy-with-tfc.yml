@@ -33,7 +33,6 @@ jobs:
       TF_WORKSPACE: ${{ secrets.TF_DEV_WORKSPACE }}
       AWS_S3_ARTIFACT_BUCKET_NAME: ${{ secrets.AWS_S3_ARTIFACT_BUCKET_NAME }}
     steps:
-      # --- ② usual: checkout / create-run / apply-run -----------------
       - uses: actions/checkout@v4
 
       - name: Create run on HCP Terraform
@@ -53,14 +52,14 @@ jobs:
         with:
           run: ${{ steps.plan.outputs.run_id }}
 
-      # --- ③ apply 完了後に output を取得 ---------------------------
+      # get the outputs from the apply run
       - name: Fetch workspace outputs
         id: tf_outputs
         uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.3.2
         with:
           workspace: ${{ secrets.TF_DEV_WORKSPACE }}
 
-      # --- ④ 取り出した JSON を分解して step-output に書き出す ---------
+      # parse the JSON output to extract values
       - name: Set individual outputs
         id: extract
         shell: bash

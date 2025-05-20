@@ -58,7 +58,7 @@ jobs:
       - name: Upload to S3 & publish layer
         id: out
         env:
-          BUCKET: ${{secrets.AWS_S3_ARTIFACT_BUCKET_NAME}}
+          BUCKET: ${{secrets.EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME}}
           SHA: ${{ github.sha }}
         run: |
           aws s3 cp dist/lambda.zip s3://$BUCKET/${{inputs.LAMBDA_ZIP_KEY}}

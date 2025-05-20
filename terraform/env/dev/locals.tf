@@ -4,7 +4,7 @@ locals {
     var.lambda_layer_zip_key == "lambda-layers/dev-my-lambda-layer-dummy.zip"
   )
   has_artifacts_bucket = (
-    var.artifacts_bucket_name != null &&
-    var.artifacts_bucket_name != ""
+    var.existing_artifacts_bucket_name != null &&
+    var.existing_artifacts_bucket_name != ""
   )
 }

@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 env:
-  BUCKET: ${{secrets.AWS_S3_ARTIFACT_BUCKET_NAME}}
+  BUCKET: ${{secrets.EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME}}
 
 jobs:
   update-lambda:

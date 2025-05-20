@@ -12,7 +12,7 @@ variable "lambda_layer_zip_key" {
   nullable    = false
 }
 
-variable "artifacts_bucket_name" {
+variable "existing_artifacts_bucket_name" {
   description = "S3 bucket for storing artifacts"
   type        = string
   default     = null

@@ -13,6 +13,4 @@ module "lambda_layer_s3" {
     bucket = var.s3_bucket_name
     key    = var.s3_key
   }
-
-  ignore_source_code_hash = true
 }

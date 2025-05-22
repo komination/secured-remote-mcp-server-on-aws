@@ -53,12 +53,12 @@ jobs:
       LAMBDA_ZIP_KEY: ${{needs.set-pipeline-variables.outputs.LAMBDA_ZIP_KEY }}
       LAMBDA_LAYER_ZIP_KEY: ${{needs.set-pipeline-variables.outputs.LAMBDA_LAYER_ZIP_KEY }}
 
-  update-lambda:
-    needs: [tfc-run, set-pipeline-variables]
-    uses: ./.github/workflows/reusable-update-lambda.yml
-    secrets: inherit
-    with:
-      lambda_function_name: ${{ needs.tfc-run.outputs.lambda_function_name }}
-      lambda_layer_arn: ${{ needs.tfc-run.outputs.lambda_layer_arn }}
-      lambda_zip_key: ${{ needs.set-pipeline-variables.outputs.LAMBDA_ZIP_KEY }}
-      lambda_layer_zip_key: ${{ needs.set-pipeline-variables.outputs.LAMBDA_LAYER_ZIP_KEY }}
+  # update-lambda:
+  #   needs: [tfc-run, set-pipeline-variables]
+  #   uses: ./.github/workflows/reusable-update-lambda.yml
+  #   secrets: inherit
+  #   with:
+  #     lambda_function_name: ${{ needs.tfc-run.outputs.lambda_function_name }}
+  #     lambda_layer_arn: ${{ needs.tfc-run.outputs.lambda_layer_arn }}
+  #     lambda_zip_key: ${{ needs.set-pipeline-variables.outputs.LAMBDA_ZIP_KEY }}
+  #     lambda_layer_zip_key: ${{ needs.set-pipeline-variables.outputs.LAMBDA_LAYER_ZIP_KEY }}

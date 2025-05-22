@@ -38,7 +38,7 @@ module "lambda_layer" {
 module "lambda" {
   source                = "../../modules/lambda"
   function_name         = "dev-my-lambda-fn"
-  handler               = "lambda_function.lambda_handler"
+  handler               = "run.sh"
   runtime               = "python3.13"
   s3_bucket_name        = local.has_artifacts_bucket ? var.existing_artifacts_bucket_name : module.s3.bucket_id
   s3_key                = var.lambda_zip_key

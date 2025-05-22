@@ -1,18 +1,28 @@
+data "aws_region" "current" {}
+
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "7.20.2"
 
   function_name = var.function_name
 
-  handler = var.handler
-  runtime = var.runtime
-  publish = true
+  handler       = var.handler
+  runtime       = var.runtime
+  publish       = true
+  architectures = ["x86_64"]
 
-  layers = var.layers
+  layers = concat(
+    var.layers,
+    ["arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:25"]
+  )
 
-  environment_variables = {
-    for key, value in var.environment_variables : key => value
-  }
+  environment_variables = merge(
+    var.environment_variables,
+    {
+      AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
+      PORT                    = "8080"
+    }
+  )
 
   attach_policy_json = true
   policy_json = jsonencode({

@@ -19,6 +19,7 @@ module "lambda" {
   environment_variables = merge(
     var.environment_variables,
     {
+      PYTHONPATH              = "/opt/python"
       AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
       PORT                    = "8080"
     }

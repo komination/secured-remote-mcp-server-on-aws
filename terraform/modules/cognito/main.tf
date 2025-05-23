@@ -1,43 +1,50 @@
-resource "random_string" "username" {
-  length  = 8
-  upper   = false
-  lower   = true
-  numeric = true
-  special = false
-}
-
-resource "random_password" "password" {
-  length  = var.password_length
-  upper   = var.password_upper
-  lower   = var.password_lower
-  numeric = var.password_number
-  special = var.password_special
-}
+data "aws_region" "current" {}
 
 resource "aws_cognito_user_pool" "this" {
-  name = "${var.name_prefix}-${random_string.username.result}"
+  name = "${var.name_prefix}-pool"
 }
 
-resource "aws_cognito_user_pool_client" "this" {
-  name                = var.client_name != "" ? var.client_name : "${var.name_prefix}-client"
-  user_pool_id        = aws_cognito_user_pool.this.id
-  generate_secret     = false
-  explicit_auth_flows = ["ADMIN_NO_SRP_AUTH", "USER_PASSWORD_AUTH"]
-}
+resource "aws_cognito_resource_server" "api" {
+  user_pool_id = aws_cognito_user_pool.this.id
+  identifier   = "api://${var.name_prefix}"
+  name         = "${var.name_prefix}-rs"
 
-resource "aws_cognito_user" "temp" {
-  user_pool_id         = aws_cognito_user_pool.this.id
-  username             = random_string.username.result
-  force_alias_creation = false
-  temporary_password   = random_password.password.result
-
-  lifecycle {
-    ignore_changes = [temporary_password]
+  scope {
+    scope_name        = "read"
+    scope_description = "Read access to ${var.name_prefix}"
   }
 }
 
-resource "aws_cognito_user_pool_domain" "domain" {
-  count        = var.enable_domain ? 1 : 0
-  domain       = var.domain_prefix != "" ? var.domain_prefix : "${var.name_prefix}-${random_string.username.result}"
+resource "aws_cognito_user_pool_client" "this" {
+  name         = "${var.name_prefix}-machine"
   user_pool_id = aws_cognito_user_pool.this.id
+
+  generate_secret                      = true
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["client_credentials"]
+  allowed_oauth_scopes                 = ["${aws_cognito_resource_server.api.identifier}/read"]
+  supported_identity_providers         = ["COGNITO"]
+  enable_token_revocation              = true
+
+  prevent_user_existence_errors = "ENABLED"
+}
+
+resource "aws_cognito_user_pool_domain" "this" {
+  domain       = "${var.name_prefix}-auth"
+  user_pool_id = aws_cognito_user_pool.this.id
+}
+
+resource "aws_secretsmanager_secret" "client_secret" {
+  name        = "${var.name_prefix}-cognito-client-secret"
+  description = "Cognito client credentials for machine-to-machine"
+}
+
+resource "aws_secretsmanager_secret_version" "client_secret" {
+  secret_id = aws_secretsmanager_secret.client_secret.id
+  secret_string = jsonencode({
+    client_id     = aws_cognito_user_pool_client.this.id
+    client_secret = aws_cognito_user_pool_client.this.client_secret
+    domain        = "https://${aws_cognito_user_pool_domain.this.domain}.auth.${data.aws_region.current.name}.amazoncognito.com"
+    scope         = "${aws_cognito_resource_server.api.identifier}/read"
+  })
 }

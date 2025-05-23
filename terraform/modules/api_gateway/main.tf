@@ -12,7 +12,7 @@ module "api_gateway" {
   create_domain_name    = false
   create_domain_records = false
 
-  authorizers = var.enable_cognito_auth ? {
+  authorizers = {
     cognito = {
       name             = "${var.name}-cognito"
       authorizer_type  = "JWT"
@@ -22,12 +22,13 @@ module "api_gateway" {
         issuer   = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${var.cognito_user_pool_id}"
       }
     }
-  } : {}
+  }
 
   routes = {
     "$default" = {
-      authorization_type = var.enable_cognito_auth ? "JWT" : "NONE"
-      authorizer_key     = var.enable_cognito_auth ? "cognito" : null
+      authorization_type   = "JWT"
+      authorizer_key       = "cognito"
+      authorization_scopes = [var.cognito_scope_read]
 
       integration = {
         uri = var.lambda_function_arn

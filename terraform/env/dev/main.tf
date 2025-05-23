@@ -71,7 +71,7 @@ module "api_gateway" {
     expose_headers = []
     max_age        = 0
   }
-  enable_cognito_auth         = true
   cognito_user_pool_id        = module.cognito.user_pool_id
   cognito_user_pool_client_id = module.cognito.user_pool_client_id
+  cognito_scope_read          = module.cognito.scope_read
 }

@@ -2,7 +2,7 @@ from fastmcp import FastMCP
 import os
 import boto3
 
-mcp = FastMCP(json_response=True)
+mcp = FastMCP(json_response=True, stateless_http=True)
 s3 = boto3.client('s3')
 
 @mcp.tool()
@@ -36,13 +36,10 @@ def multiply(a: int, b: int) -> int:
     """
     return a * b
 
-app = mcp.http_app()
-
 if __name__ == "__main__":
     mcp.run(
         transport="streamable-http",
         host="0.0.0.0",
         port=8080,
-        path="/",             # ルート提供
         log_level="critical",
     )

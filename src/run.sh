@@ -1,2 +1,7 @@
-#!/bin/sh
-exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8080}"
+#!/bin/bash
+
+python -m uvicorn main:app \
+    --proxy-headers \
+    --host 0.0.0.0 \
+    --port ${PORT}
+

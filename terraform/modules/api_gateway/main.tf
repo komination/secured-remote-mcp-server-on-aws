@@ -33,6 +33,7 @@ module "api_gateway" {
       integration = {
         uri = var.lambda_function_arn
       }
+      method = "ANY"
     }
   }
 }

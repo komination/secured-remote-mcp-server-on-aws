@@ -10,6 +10,8 @@ module "lambda" {
   runtime       = var.runtime
   publish       = true
   architectures = ["x86_64"]
+  timeout       = 60
+  memory_size   = 256
 
   layers = concat(
     var.layers,
@@ -21,6 +23,7 @@ module "lambda" {
     {
       PYTHONPATH              = "/opt/python"
       AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
+      AWS_LWA_ALLOW_METHODS   = "DELETE,PUT,PATCH"
       PORT                    = "8080"
     }
   )

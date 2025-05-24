@@ -35,8 +35,9 @@ resource "aws_cognito_user_pool_domain" "this" {
 }
 
 resource "aws_secretsmanager_secret" "client_secret" {
-  name        = "${var.name_prefix}-cognito-client-secret"
-  description = "Cognito client credentials for machine-to-machine"
+  name                    = "${var.name_prefix}-cognito-client-secret"
+  description             = "Cognito client credentials for machine-to-machine"
+  recovery_window_in_days = var.recovery_window_in_days
 }
 
 resource "aws_secretsmanager_secret_version" "client_secret" {

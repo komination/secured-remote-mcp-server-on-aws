@@ -2,7 +2,11 @@ from fastmcp import FastMCP
 import os
 import boto3
 
-mcp = FastMCP("remote-mcp-server")
+mcp = FastMCP(
+    "remote-mcp-server",
+    stateless_http=True,
+    json_response=True
+)
 s3 = boto3.client('s3')
 
 @mcp.tool()

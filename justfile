@@ -27,3 +27,7 @@ pr-create head_branch base_branch title:
         --title "{{title}}" \
         --body "" \
         --label ""
+
+pip-export:
+    cd /app/src && \
+    uv export --format=requirements.txt --output-file requirements.txt --no-cache

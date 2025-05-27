@@ -16,10 +16,6 @@ variable "repo_name" {
   description = "The name of the GitHub repository"
   type        = string
 }
-variable "branch_name" {
-  description = "The name of the GitHub branch"
-  type        = string
-}
 
 provider "tfe" {}
 
@@ -32,8 +28,10 @@ resource "tfe_project" "platform" {
 }
 
 resource "tfe_workspace" "dev" {
-  name       = "dev-${var.branch_name}"
+  name       = "dev-${var.repo_name}"
   project_id = tfe_project.platform.id
+
+
 
   vcs_repo {
     identifier                 = "${var.github_owner_name}/${var.repo_name}"
@@ -43,7 +41,7 @@ resource "tfe_workspace" "dev" {
 }
 
 resource "tfe_workspace" "prod" {
-  name       = "prod-${var.branch_name}"
+  name       = "prod-${var.repo_name}"
   project_id = tfe_project.platform.id
 
   vcs_repo {

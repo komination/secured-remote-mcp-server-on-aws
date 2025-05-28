@@ -26,7 +26,7 @@ module "vpc_endpoint_lambda" {
 
 module "lambda_layer" {
   source         = "../../modules/lambda_layer"
-  layer_name     = "dev-aws-vpc-private-lambda-for-mcp-layer"
+  layer_name     = "dev-secured-remote-mcp-server-on-aws-layer"
   runtime        = "python3.13"
   s3_bucket_name = local.has_artifacts_bucket ? var.existing_artifacts_bucket_name : module.s3.bucket_id
   s3_key         = var.lambda_layer_zip_key
@@ -37,7 +37,7 @@ module "lambda_layer" {
 
 module "lambda" {
   source                = "../../modules/lambda"
-  function_name         = "dev-aws-vpc-private-lambda-for-mcp-lambda"
+  function_name         = "dev-secured-remote-mcp-server-on-aws-lambda"
   handler               = "run.sh"
   runtime               = "python3.13"
   s3_bucket_name        = local.has_artifacts_bucket ? var.existing_artifacts_bucket_name : module.s3.bucket_id
@@ -56,12 +56,12 @@ module "lambda" {
 
 module "cognito" {
   source      = "../../modules/cognito"
-  name_prefix = "dev-api-gateway-auth-for-mcp-kjawu1"
+  name_prefix = "dev-kjawu1aw21aga"
 }
 
 module "api_gateway" {
   source              = "../../modules/api_gateway"
-  name                = "dev-aws-vpc-private-lambda-for-mcp-api"
+  name                = "dev-secured-remote-mcp-server-on-aws-api"
   description         = "Dev environment API"
   lambda_function_arn = module.lambda.function_arn
   cors_configuration = {

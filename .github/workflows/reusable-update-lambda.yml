@@ -1,0 +1,63 @@
+name: 'Reusable Workflow: Update Lambda Layer and Lambda'
+on:
+    workflow_call:
+        inputs:
+            lambda_function_name:
+                description: "Name of the Lambda function to update"
+                required: true
+                type: string
+            lambda_layer_arn:
+                description: "ARN of the Lambda layer version to use (skip publishing)"
+                required: true
+                type: string
+
+            lambda_zip_key:
+                description: "S3 key for the Lambda function zip"
+                required: true
+                type: string
+            lambda_layer_zip_key:
+                description: "S3 key for the Lambda layer zip"
+                required: true
+                type: string
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BUCKET: ${{secrets.EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME}}
+
+jobs:
+  update-lambda:
+    runs-on: ubuntu-latest
+    environment: develop
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Publish Lambda Layer and set output
+        id: publish_layer
+        if: ${{ inputs.lambda_layer_zip_key != '' }}
+        run: |
+          LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
+            --layer-name ${{ inputs.lambda_layer_arn }} \
+            --content S3Bucket=${{ env.BUCKET }},S3Key=${{ inputs.lambda_layer_zip_key }} \
+            --query 'LayerVersionArn' --output text)
+          echo "layer_arn=$LAYER_VERSION_ARN" >> $GITHUB_OUTPUT
+
+      - name: Update Lambda Function Configuration with new Layer
+        if: ${{ inputs.lambda_layer_zip_key != '' && inputs.lambda_function_name != '' }}
+        run: |
+          aws lambda update-function-configuration \
+            --function-name ${{ inputs.lambda_function_name }} \
+            --layers ${{ steps.publish_layer.outputs.layer_arn }}
+
+      - name: Update Lambda Function
+        if: ${{ inputs.lambda_zip_key != '' }}
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ inputs.lambda_function_name }} \
+            --s3-bucket ${{ env.BUCKET }} \
+            --s3-key ${{ inputs.lambda_zip_key }}

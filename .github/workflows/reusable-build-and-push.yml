@@ -1,0 +1,70 @@
+name: 'Reusable Workflow: Build and Push Lambda'
+on:
+  workflow_call:
+    inputs:
+        LAMBDA_ZIP_KEY:
+          description: "S3 key for the Lambda function zip"
+          required: true
+          type: string
+        LAMBDA_LAYER_ZIP_KEY:
+          description: "S3 key for the Lambda layer zip"
+          required: true
+          type: string
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: develop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # get cache 
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('src/requirements.txt') }}
+
+      - name: mkdir dist
+        run: mkdir -p dist
+      
+      # install dependencies
+      - name: Install dependencies into layer/python
+        run: |
+          python -m pip install --upgrade -r requirements.txt --target ../layer/python
+        working-directory: src
+
+      # zip to package
+      - name: Package layer
+        run: zip -r ../dist/layer.zip .
+        working-directory: layer
+
+      - name: Package lambda
+        run: zip -r ../dist/lambda.zip .
+        working-directory: src
+
+      # upload to S3
+      - name: Upload to S3 & publish layer
+        id: out
+        env:
+          BUCKET: ${{secrets.EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME}}
+          SHA: ${{ github.sha }}
+        run: |
+          aws s3 cp dist/lambda.zip s3://$BUCKET/${{inputs.LAMBDA_ZIP_KEY}}
+          aws s3 cp dist/layer.zip s3://$BUCKET/${{inputs.LAMBDA_LAYER_ZIP_KEY}}

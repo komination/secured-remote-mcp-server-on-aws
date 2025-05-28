@@ -1,18 +1,32 @@
+data "aws_region" "current" {}
+
 module "lambda" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "7.20.2"
 
   function_name = var.function_name
 
-  handler = var.handler
-  runtime = var.runtime
-  publish = true
+  handler       = var.handler
+  runtime       = var.runtime
+  publish       = true
+  architectures = ["x86_64"]
+  timeout       = 60
+  memory_size   = 256
 
-  layers = var.layers
+  layers = concat(
+    var.layers,
+    ["arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:25"]
+  )
 
-  environment_variables = {
-    for key, value in var.environment_variables : key => value
-  }
+  environment_variables = merge(
+    var.environment_variables,
+    {
+      PYTHONPATH              = "/opt/python"
+      AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
+      AWS_LWA_ALLOW_METHODS   = "DELETE,PUT,PATCH"
+      PORT                    = "8080"
+    }
+  )
 
   attach_policy_json = true
   policy_json = jsonencode({
@@ -41,6 +55,4 @@ module "lambda" {
   vpc_security_group_ids = [var.vpc_security_group_id]
 
   attach_network_policy = true
-
-  ignore_source_code_hash = true
 }

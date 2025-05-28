@@ -1,0 +1,33 @@
+{
+    "servers": {
+        // AWS公式のローカルMCPサーバー
+        "awslabs.aws-documentation-mcp-server": {
+            "command": "uvx",
+            "args": ["awslabs.aws-documentation-mcp-server@latest"],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "ERROR"
+            },
+            "disabled": false,
+            "autoApprove": []
+        },
+        "awslabs.terraform-mcp-server": {
+            "command": "uvx",
+            "args": ["awslabs.terraform-mcp-server@latest"],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "ERROR"
+            },
+            "disabled": false,
+            "autoApprove": []
+        },
+
+        // my remote MCP server
+        // "aws-private-lambda-for-mcp": {
+        //     "type": "http",
+        //     "url":  "https://{resouce_name}.execute-api.ap-northeast-1.amazonaws.com/mcp/",
+        //     "headers": {
+        //         "Authorization": "Bearer ey...",
+        //         "Accept": "application/json, text/event-stream"
+        //     }
+        // }
+    }
+}

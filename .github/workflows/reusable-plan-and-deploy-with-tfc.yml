@@ -1,0 +1,77 @@
+name: 'Reusable Workflow: Plan and Deploy with TFC'
+
+on:
+  workflow_call:
+    inputs:
+      LAMBDA_ZIP_KEY:
+        required: false
+        default: null
+        type: string
+      LAMBDA_LAYER_ZIP_KEY:
+        required: false
+        default: null
+        type: string
+    outputs:
+      lambda_function_name:
+        description: "Name of the Lambda function to update"
+        value: ${{ jobs.plan-and-apply.outputs.lambda_function_name }}
+      lambda_layer_arn:
+        description: "ARN of the Lambda layer to publish"
+        value: ${{ jobs.plan-and-apply.outputs.lambda_layer_arn }}
+  workflow_dispatch:
+
+jobs:
+  plan-and-apply:
+    runs-on: ubuntu-latest
+    environment: develop
+    outputs:
+      lambda_function_name: ${{ steps.extract.outputs.lambda_function_name }}
+      lambda_layer_arn:   ${{ steps.extract.outputs.lambda_layer_arn }}
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ secrets.TF_DEV_WORKSPACE }}
+      EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME: ${{ secrets.EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create run on HCP Terraform
+        id: plan
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        with:
+          workspace: ${{ secrets.TF_DEV_WORKSPACE }}
+          message: "Commit Hash: ${{ github.sha }}"
+        env:
+          TF_VAR_lambda_zip_key:        ${{ toJSON(inputs.LAMBDA_ZIP_KEY) }}
+          TF_VAR_lambda_layer_zip_key:  ${{ toJSON(inputs.LAMBDA_LAYER_ZIP_KEY) }}
+          TF_VAR_existing_artifacts_bucket_name: ${{ toJSON(env.EXISTING_AWS_S3_ARTIFACT_BUCKET_NAME) }}
+
+      - name: Apply run
+        id: apply
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
+        with:
+          run: ${{ steps.plan.outputs.run_id }}
+
+      # get the outputs from the apply run
+      - name: Fetch workspace outputs
+        id: tf_outputs
+        uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.3.2
+        with:
+          workspace: ${{ secrets.TF_DEV_WORKSPACE }}
+
+      # parse the JSON output to extract values
+      - name: Set individual outputs
+        id: extract
+        shell: bash
+        run: |
+          # get JSON from the previous step output
+          json="${{ toJson(steps.tf_outputs.outputs.outputs) }}"
+
+          # parse JSON to extract values
+          lambda_function_name=$(jq -r '.[] | select(.name=="lambda_function_name") | .value' <<<"$json")
+          lambda_layer_arn=$(jq -r '.[] | select(.name=="lambda_layer_arn") | .value' <<<"$json")
+          layer_arn_base="${lambda_layer_arn%:*}"
+
+          # set outputs
+          echo "lambda_function_name=$lambda_function_name" >> "$GITHUB_OUTPUT"
+          echo "lambda_layer_arn=$layer_arn_base" >> "$GITHUB_OUTPUT"

@@ -6,7 +6,7 @@ module "vpc" {
 
 module "s3" {
   source            = "../../modules/s3"
-  bucket_name       = "aws-vpc-lambda-integration-dev"
+  bucket_name       = "dev-aws-vpc-lambda-integration"
   enable_versioning = true
 }
 
@@ -26,9 +26,9 @@ module "vpc_endpoint_lambda" {
 
 module "lambda_layer" {
   source         = "../../modules/lambda_layer"
-  layer_name     = "dev-my-lambda-layer"
+  layer_name     = "dev-secured-remote-mcp-server-on-aws-layer"
   runtime        = "python3.13"
-  s3_bucket_name = module.s3.bucket_id
+  s3_bucket_name = local.has_artifacts_bucket ? var.existing_artifacts_bucket_name : module.s3.bucket_id
   s3_key         = var.lambda_layer_zip_key
   depends_on = [
     module.s3
@@ -37,10 +37,10 @@ module "lambda_layer" {
 
 module "lambda" {
   source                = "../../modules/lambda"
-  function_name         = "dev-my-lambda-fn"
-  handler               = "lambda_function.lambda_handler"
+  function_name         = "dev-secured-remote-mcp-server-on-aws-lambda"
+  handler               = "run.sh"
   runtime               = "python3.13"
-  s3_bucket_name        = module.s3.bucket_id
+  s3_bucket_name        = local.has_artifacts_bucket ? var.existing_artifacts_bucket_name : module.s3.bucket_id
   s3_key                = var.lambda_zip_key
   s3_bucket_arn         = module.s3.bucket_arn
   layers                = [module.lambda_layer.layer_arn]
@@ -56,22 +56,20 @@ module "lambda" {
 
 module "cognito" {
   source      = "../../modules/cognito"
-  name_prefix = "dev-cognito"
+  name_prefix = "dev-kjawu1aw21aga"
 }
 
 module "api_gateway" {
-  source                       = "../../modules/api_gateway"
-  name                         = "dev-api"
-  description                  = "Dev environment API"
-  lambda_function_arn          = module.lambda.function_arn
-  cors_configuration           = {
-    allow_headers  = ["*"]
-    allow_methods  = ["GET","POST","OPTIONS"]
-    allow_origins  = ["*"]
-    expose_headers = []
-    max_age        = 0
+  source              = "../../modules/api_gateway"
+  name                = "dev-secured-remote-mcp-server-on-aws-api"
+  description         = "Dev environment API"
+  lambda_function_arn = module.lambda.function_arn
+  cors_configuration = {
+    allow_headers = ["*"]
+    allow_methods = ["*"]
+    allow_origins = ["*"]
   }
-  enable_cognito_auth          = true
-  cognito_user_pool_id         = module.cognito.user_pool_id
-  cognito_user_pool_client_id  = module.cognito.user_pool_client_id
+  cognito_user_pool_id        = module.cognito.user_pool_id
+  cognito_user_pool_client_id = module.cognito.user_pool_client_id
+  cognito_scope_read          = module.cognito.scope_read
 }

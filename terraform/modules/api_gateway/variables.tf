@@ -25,12 +25,6 @@ variable "cors_configuration" {
   })
 }
 
-variable "enable_cognito_auth" {
-  description = "Enable Cognito JWT authorizer"
-  type        = bool
-  default     = false
-}
-
 variable "cognito_user_pool_id" {
   description = "Cognito User Pool ID for JWT authorizer"
   type        = string
@@ -41,4 +35,9 @@ variable "cognito_user_pool_client_id" {
   description = "Cognito User Pool Client ID for JWT authorizer"
   type        = string
   default     = ""
+}
+
+variable "cognito_scope_read" {
+  description = "Read-scope string like api://dev-cognito/read"
+  type        = string
 }

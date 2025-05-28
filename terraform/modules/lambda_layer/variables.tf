@@ -11,7 +11,7 @@ variable "s3_key" {
 variable "runtime" {
   description = "実行ランタイム"
   type        = string
-  default     = "python3.12"
+  default     = "python3.13"
 }
 
 variable "layer_name" {

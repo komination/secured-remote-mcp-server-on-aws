@@ -7,16 +7,20 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
-    gnupg
+    gnupg \
+    jq
 
-# Node.jsのインストール
+# Node.js及びClaude Codeのインストール
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get update && \
-    apt-get install -y nodejs
+    apt-get install -y nodejs && \
+    npm install -g @anthropic-ai/claude-code
 
 RUN pip install \ 
     rust-just \ 
-    aws-sam-cli
+    aws-sam-cli \
+    pre-commit
+
 
 RUN groupadd -g ${UID} ${USER} && \
     useradd -m -u ${UID} -g ${UID} -s /bin/bash ${USER} && \

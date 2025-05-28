@@ -104,8 +104,9 @@ resource "tfe_project" "platform" {
 }
 
 resource "tfe_workspace" "dev" {
-  name       = "dev-${var.repo_name}"
-  project_id = tfe_project.platform.id
+  name              = "dev-${var.repo_name}"
+  project_id        = tfe_project.platform.id
+  working_directory = "terraform/env/dev"
   vcs_repo {
     identifier                 = "${var.github_owner_name}/${var.repo_name}"
     branch                     = "develop"
@@ -114,8 +115,9 @@ resource "tfe_workspace" "dev" {
 }
 
 resource "tfe_workspace" "prod" {
-  name       = "prod-${var.repo_name}"
-  project_id = tfe_project.platform.id
+  name              = "prod-${var.repo_name}"
+  project_id        = tfe_project.platform.id
+  working_directory = "terraform/env/prod"
   vcs_repo {
     identifier                 = "${var.github_owner_name}/${var.repo_name}"
     branch                     = "main"
@@ -152,8 +154,8 @@ resource "aws_iam_role" "hcp_terraform_role" {
           }
           StringLike = {
             "app.terraform.io:sub" = [
-              "organization:${data.tfe_organization.current.name}:workspace:${tfe_workspace.dev.name}:run_phase:*",
-              "organization:${data.tfe_organization.current.name}:workspace:${tfe_workspace.prod.name}:run_phase:*"
+              "organization:${data.tfe_organization.current.name}:project:*:workspace:${tfe_workspace.dev.name}:run_phase:*",
+              "organization:${data.tfe_organization.current.name}:project:*:workspace:${tfe_workspace.prod.name}:run_phase:*"
             ]
           }
         }

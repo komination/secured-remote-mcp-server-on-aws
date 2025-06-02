@@ -11,22 +11,12 @@ on:
         required: false
         default: null
         type: string
-    outputs:
-      lambda_function_name:
-        description: "Name of the Lambda function to update"
-        value: ${{ jobs.plan-and-apply.outputs.lambda_function_name }}
-      lambda_layer_arn:
-        description: "ARN of the Lambda layer to publish"
-        value: ${{ jobs.plan-and-apply.outputs.lambda_layer_arn }}
   workflow_dispatch:
 
 jobs:
   plan-and-apply:
     runs-on: ubuntu-latest
     environment: develop
-    outputs:
-      lambda_function_name: ${{ steps.extract.outputs.lambda_function_name }}
-      lambda_layer_arn:   ${{ steps.extract.outputs.lambda_layer_arn }}
     env:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORGANIZATION }}
@@ -51,27 +41,3 @@ jobs:
         uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
         with:
           run: ${{ steps.plan.outputs.run_id }}
-
-      # get the outputs from the apply run
-      - name: Fetch workspace outputs
-        id: tf_outputs
-        uses: hashicorp/tfc-workflows-github/actions/workspace-output@v1.3.2
-        with:
-          workspace: ${{ secrets.TF_DEV_WORKSPACE }}
-
-      # parse the JSON output to extract values
-      - name: Set individual outputs
-        id: extract
-        shell: bash
-        run: |
-          # get JSON from the previous step output
-          json="${{ toJson(steps.tf_outputs.outputs.outputs) }}"
-
-          # parse JSON to extract values
-          lambda_function_name=$(jq -r '.[] | select(.name=="lambda_function_name") | .value' <<<"$json")
-          lambda_layer_arn=$(jq -r '.[] | select(.name=="lambda_layer_arn") | .value' <<<"$json")
-          layer_arn_base="${lambda_layer_arn%:*}"
-
-          # set outputs
-          echo "lambda_function_name=$lambda_function_name" >> "$GITHUB_OUTPUT"
-          echo "lambda_layer_arn=$layer_arn_base" >> "$GITHUB_OUTPUT"

@@ -1,3 +1,7 @@
+# =============================================================================
+# Terraform Configuration and Providers
+# =============================================================================
+
 terraform {
   required_providers {
     tfe = {
@@ -9,7 +13,7 @@ terraform {
       version = ">=5.72.1"
     }
   }
-  // 暫定的にローカル使用
+  # 暫定的にローカル使用
   backend "local" {}
 }
 
@@ -18,6 +22,10 @@ provider "tfe" {}
 provider "aws" {
   region = "ap-northeast-1"
 }
+
+# =============================================================================
+# Variables
+# =============================================================================
 
 variable "github_owner_name" {
   description = "The owner of the GitHub repository"
@@ -29,129 +37,99 @@ variable "repo_name" {
   type        = string
 }
 
+# =============================================================================
+# Data Sources
+# =============================================================================
+
 # 現在のorganization情報を取得
 data "tfe_organization" "current" {}
 
 # 現在のAWSアカウント情報を取得
 data "aws_caller_identity" "current" {}
 
+# GitHub App インストール情報を取得
 data "tfe_github_app_installation" "my" {
   name = var.github_owner_name
 }
 
-# Terraform CloudのOIDC証明書を動的に取得
+# Terraform Cloud の OIDC 証明書を動的に取得
 data "tls_certificate" "hcp_terraform" {
   url = "https://app.terraform.io/.well-known/openid-configuration"
 }
 
-# GitHub ActionsのOIDC証明書を動的に取得
+# GitHub Actions の OIDC 証明書を動的に取得
 data "tls_certificate" "github_actions" {
   url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
 }
 
-# 既存のHCP Terraform OIDCプロバイダーを確認
+# 既存の HCP Terraform OIDC プロバイダーを確認
 data "aws_iam_openid_connect_provider" "existing_hcp_terraform" {
-  for_each = toset(["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/app.terraform.io"])
-  arn      = each.value
+  for_each = toset([
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/app.terraform.io"
+  ])
+  arn = each.value
 }
 
-# 既存のGitHub Actions OIDCプロバイダーを確認
+# 既存の GitHub Actions OIDC プロバイダーを確認
 data "aws_iam_openid_connect_provider" "existing_github_actions" {
-  for_each = toset(["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"])
-  arn      = each.value
+  for_each = toset([
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+  ])
+  arn = each.value
 }
 
-# 各OIDCプロバイダーが存在するかチェック
+# =============================================================================
+# Local Values
+# =============================================================================
+
 locals {
-  hcp_terraform_oidc_provider_exists = length(data.aws_iam_openid_connect_provider.existing_hcp_terraform) > 0
-  hcp_terraform_oidc_provider_arn    = local.hcp_terraform_oidc_provider_exists ? values(data.aws_iam_openid_connect_provider.existing_hcp_terraform)[0].arn : aws_iam_openid_connect_provider.hcp_terraform[0].arn
-
+  # OIDC Provider Existence Checks
+  hcp_terraform_oidc_provider_exists  = length(data.aws_iam_openid_connect_provider.existing_hcp_terraform) > 0
   github_actions_oidc_provider_exists = length(data.aws_iam_openid_connect_provider.existing_github_actions) > 0
-  github_actions_oidc_provider_arn    = local.github_actions_oidc_provider_exists ? values(data.aws_iam_openid_connect_provider.existing_github_actions)[0].arn : aws_iam_openid_connect_provider.github_actions[0].arn
 
-  # GitHub Actions用の許可されたリポジトリ
+  # OIDC Provider ARNs
+  hcp_terraform_oidc_provider_arn  = local.hcp_terraform_oidc_provider_exists ? values(data.aws_iam_openid_connect_provider.existing_hcp_terraform)[0].arn : aws_iam_openid_connect_provider.hcp_terraform[0].arn
+  github_actions_oidc_provider_arn = local.github_actions_oidc_provider_exists ? values(data.aws_iam_openid_connect_provider.existing_github_actions)[0].arn : aws_iam_openid_connect_provider.github_actions[0].arn
+
+  # GitHub Repository Configuration
   allowed_github_repositories = [var.repo_name]
-  full_paths = [
-    for repo in local.allowed_github_repositories : "repo:${var.github_owner_name}/${repo}:*"
-  ]
+  full_paths                  = [for repo in local.allowed_github_repositories : "repo:${var.github_owner_name}/${repo}:*"]
 }
 
-# OIDCプロバイダーを条件付きで作成
+# =============================================================================
+# AWS OIDC Identity Providers
+# =============================================================================
+
 resource "aws_iam_openid_connect_provider" "hcp_terraform" {
-  count = local.hcp_terraform_oidc_provider_exists ? 0 : 1
-
-  url = "https://app.terraform.io"
-
-  client_id_list = ["aws.workload.identity"]
-
-  # 動的に取得したthumbprint
+  count           = local.hcp_terraform_oidc_provider_exists ? 0 : 1
+  url             = "https://app.terraform.io"
+  client_id_list  = ["aws.workload.identity"]
   thumbprint_list = [data.tls_certificate.hcp_terraform.certificates[0].sha1_fingerprint]
-
 }
 
-# OIDCプロバイダーを条件付きで作成
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  count = local.github_actions_oidc_provider_exists ? 0 : 1
-
-  url            = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
-
+  count           = local.github_actions_oidc_provider_exists ? 0 : 1
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
 }
 
-resource "tfe_project" "platform" {
-  name = var.repo_name
-}
+# =============================================================================
+# AWS IAM Roles and Policies
+# =============================================================================
 
-resource "tfe_workspace" "dev" {
-  name              = "dev-${var.repo_name}"
-  project_id        = tfe_project.platform.id
-  working_directory = "terraform/env/dev"
-  vcs_repo {
-    identifier                 = "${var.github_owner_name}/${var.repo_name}"
-    branch                     = "develop"
-    github_app_installation_id = data.tfe_github_app_installation.my.id
-  }
-}
-
-resource "tfe_workspace" "prod" {
-  name              = "prod-${var.repo_name}"
-  project_id        = tfe_project.platform.id
-  working_directory = "terraform/env/prod"
-  vcs_repo {
-    identifier                 = "${var.github_owner_name}/${var.repo_name}"
-    branch                     = "main"
-    github_app_installation_id = data.tfe_github_app_installation.my.id
-  }
-}
-
-resource "tfe_workspace_settings" "dev" {
-  workspace_id   = tfe_workspace.dev.id
-  execution_mode = "remote"
-}
-
-resource "tfe_workspace_settings" "prod" {
-  workspace_id   = tfe_workspace.prod.id
-  execution_mode = "remote"
-}
-
-# ロール作成（信頼ポリシーでassume_roleを許可）
 resource "aws_iam_role" "hcp_terraform_role" {
   name = "hcp-terraform-role-${var.repo_name}"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Effect = "Allow"
-        Principal = {
-          Federated = local.hcp_terraform_oidc_provider_arn
-        }
+        Action    = "sts:AssumeRoleWithWebIdentity",
+        Effect    = "Allow",
+        Principal = { Federated = local.hcp_terraform_oidc_provider_arn },
         Condition = {
-          StringEquals = {
-            "app.terraform.io:aud" = "aws.workload.identity"
-          }
+          StringEquals = { "app.terraform.io:aud" = "aws.workload.identity" },
           StringLike = {
             "app.terraform.io:sub" = [
               "organization:${data.tfe_organization.current.name}:project:*:workspace:${tfe_workspace.dev.name}:run_phase:*",
@@ -164,22 +142,20 @@ resource "aws_iam_role" "hcp_terraform_role" {
   })
 }
 
-# ロール作成（信頼ポリシーでassume_roleを許可）
 resource "aws_iam_role" "github_actions" {
   name = "github-actions-${var.repo_name}"
+
   assume_role_policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
+    Version = "2012-10-17",
+    Statement = [
       {
-        "Effect" : "Allow",
-        "Principal" : {
-          "Federated" : "arn:aws:iam::448866508124:oidc-provider/token.actions.githubusercontent.com"
-        },
-        "Action" : "sts:AssumeRoleWithWebIdentity",
-        "Condition" : {
-          "StringEquals" : {
-            "token.actions.githubusercontent.com:sub" : "repo:${var.github_owner_name}/${var.repo_name}:environment:develop",
-            "token.actions.githubusercontent.com:aud" : "sts.amazonaws.com"
+        Effect    = "Allow",
+        Principal = { Federated = "arn:aws:iam::448866508124:oidc-provider/token.actions.githubusercontent.com" },
+        Action    = "sts:AssumeRoleWithWebIdentity",
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner_name}/${var.repo_name}:environment:develop",
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
         }
       }
@@ -187,19 +163,67 @@ resource "aws_iam_role" "github_actions" {
   })
 }
 
-# ポリシーアタッチメント
 resource "aws_iam_role_policy_attachment" "hcp_terraform_policy" {
   role       = aws_iam_role.hcp_terraform_role.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
-# ポリシーアタッチメント
 resource "aws_iam_role_policy_attachment" "github_actions_admin" {
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
   role       = aws_iam_role.github_actions.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
-# Dev ワークスペースの環境変数設定
+# =============================================================================
+# Terraform Cloud Project and Workspaces
+# =============================================================================
+
+resource "tfe_project" "platform" {
+  name = var.repo_name
+}
+
+resource "tfe_workspace" "dev" {
+  name              = "dev-${var.repo_name}"
+  project_id        = tfe_project.platform.id
+  working_directory = "terraform/env/dev"
+
+  vcs_repo {
+    identifier                 = "${var.github_owner_name}/${var.repo_name}"
+    branch                     = "develop"
+    github_app_installation_id = data.tfe_github_app_installation.my.id
+  }
+}
+
+resource "tfe_workspace" "prod" {
+  name              = "prod-${var.repo_name}"
+  project_id        = tfe_project.platform.id
+  working_directory = "terraform/env/prod"
+
+  vcs_repo {
+    identifier                 = "${var.github_owner_name}/${var.repo_name}"
+    branch                     = "main"
+    github_app_installation_id = data.tfe_github_app_installation.my.id
+  }
+}
+
+# =============================================================================
+# Terraform Cloud Workspace Settings
+# =============================================================================
+
+resource "tfe_workspace_settings" "dev" {
+  workspace_id   = tfe_workspace.dev.id
+  execution_mode = "remote"
+}
+
+resource "tfe_workspace_settings" "prod" {
+  workspace_id   = tfe_workspace.prod.id
+  execution_mode = "remote"
+}
+
+# =============================================================================
+# Terraform Cloud Workspace Variables
+# =============================================================================
+
+# Dev Environment Variables
 resource "tfe_variable" "dev_aws_provider_auth" {
   key          = "TFC_AWS_PROVIDER_AUTH"
   value        = "true"
@@ -216,7 +240,7 @@ resource "tfe_variable" "dev_aws_run_role_arn" {
   description  = "AWS IAM Role ARN for OIDC authentication"
 }
 
-# Prod ワークスペースの環境変数設定
+# Prod Environment Variables
 resource "tfe_variable" "prod_aws_provider_auth" {
   key          = "TFC_AWS_PROVIDER_AUTH"
   value        = "true"
@@ -233,7 +257,11 @@ resource "tfe_variable" "prod_aws_run_role_arn" {
   description  = "AWS IAM Role ARN for OIDC authentication"
 }
 
-# 出力
+# =============================================================================
+# Outputs
+# =============================================================================
+
+# OIDC Provider Status and ARNs
 output "hcp_terraform_oidc_provider_status" {
   value = local.hcp_terraform_oidc_provider_exists ? "Using existing OIDC provider" : "Created new OIDC provider"
 }
@@ -252,6 +280,7 @@ output "github_actions_oidc_provider_arn" {
   description = "ARN of the GitHub Actions OIDC provider"
 }
 
+# IAM Role ARNs
 output "hcp_terraform_iam_role_arn" {
   value       = aws_iam_role.hcp_terraform_role.arn
   description = "ARN of the IAM role for Terraform Cloud"
@@ -262,6 +291,7 @@ output "github_actions_iam_role_arn" {
   description = "ARN of the IAM role for GitHub Actions"
 }
 
+# Workspace IDs
 output "dev_workspace_id" {
   value       = tfe_workspace.dev.id
   description = "ID of the dev workspace"

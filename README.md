@@ -46,7 +46,7 @@ MCP Clientからの利用</br>
             "url":  "https://{apiエンドポイント名}.execute-api.ap-northeast-1.amazonaws.com/mcp/",
             "headers": {
                 "Authorization": "Bearer eyJraWQiOiJJ.....",
-                "Accept": "application/json, text/event-stream"
+                "Accept": "application/json"
             }
         }
     }

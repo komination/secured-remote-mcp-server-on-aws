@@ -26,7 +26,7 @@
         //     "url":  "https://{resouce_name}.execute-api.ap-northeast-1.amazonaws.com/mcp/",
         //     "headers": {
         //         "Authorization": "Bearer ey...",
-        //         "Accept": "application/json, text/event-stream"
+        //         "Accept": "application/json"
         //     }
         // }
     }

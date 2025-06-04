@@ -19,7 +19,8 @@
 				"4ops.terraform",
 				"PKief.material-icon-theme",
 				"saoudrizwan.claude-dev",
-				"github.vscode-github-actions"
+				"github.vscode-github-actions",
+				"Anthropic.claude-code"
 			]
 		}
 	},

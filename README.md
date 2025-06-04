@@ -27,33 +27,13 @@
 │       ├── /vpc             
 │       ├── /lambda
 │       └── ...
-├── /sam                     # aws sam cli版 (未)
+├── /sam                     # aws sam cli版 (未完成)
 ├── /src                     # mcp serverのソースコード
 ├── /src                     # mcp serverのソースコード
 └── README.md                # このファイル
 ```
 
-## 使用方法
-
-MCP Clientからの利用</br>
-例: vscode拡張機能のGithub Copilot Agentの設定例(mcp.json)
-
-``` mcp.json
-{
-    "servers": {
-        "aws-private-lambda-for-mcp": {
-            "type": "http",
-            "url":  "https://{apiエンドポイント名}.execute-api.ap-northeast-1.amazonaws.com/mcp/",
-            "headers": {
-                "Authorization": "Bearer eyJraWQiOiJJ.....",
-                "Accept": "application/json"
-            }
-        }
-    }
-}
-```
-
-## デプロイ
+## 環境構築
 
 前提条件:
 
@@ -72,11 +52,57 @@ HCP Terraform bootstrap:
 
 1. 「TFE_TOKEN」は「<https://app.terraform.io/app/settings/tokens>」で発行
 1. 「TFE_ORGANIZATION」は「<https://app.terraform.io/app/organizations/new>」で作成
+1. HCP Terraformワークスペースの作成
 
 ```bash
-# devcontainerに入る
-# bootstrap.tfを元に「dev-secured-remote-mcp-server-on-aws」と「prod-secured-remote-mcp-server-on-aws」が作成される
-terraform init
-terraform plan
-terraform apply
+# devcontainerに入って以下のコマンドを実行
+/app$ terraform init
+/app$ terraform plan
+/app$ terraform apply
+
+# 🛠️ bootstrap.tf`を使用してHCP Terraformに以下の構造が作成されます
+YOUR_ORGANIZATION/
+├── projects/
+    └── secured-remote-mcp-server-on-aws/
+        └── workspaces/
+            ├── dev-secured-remote-mcp-server-on-aws
+            └── prod-secured-remote-mcp-server-on-aws
+```
+
+## 使用方法
+
+### 1. OAuthアクセストークンの取得
+
+API Gatewayへのアクセスに必要なOAuthアクセストークンを取得します：
+
+```bash
+# devcontainer内
+
+# トークンのみ取得（AWS Secrets Managerから認証情報を取得して生成）
+# 特定のAWSプロファイルを使用してトークン取得
+just get-token "my-api-secret" "profile-name"
+
+# API接続テスト（トークン取得からAPI呼び出しまでの全体テスト）
+just test-api "my-api-secret" "https://{apiエンドポイント名}.execute-api.ap-northeast-1.amazonaws.com/mcp/"
+```
+
+### 2. MCP Clientからの利用
+
+取得したトークンを使用してMCP Clientを設定します。</br>
+
+例: VSCode拡張機能のGitHub Copilot Agentの設定例(mcp.json)
+
+```json
+{
+    "servers": {
+        "aws-private-lambda-for-mcp": {
+            "type": "http",
+            "url":  "https://{apiエンドポイント名}.execute-api.ap-northeast-1.amazonaws.com/mcp/",
+            "headers": {
+                "Authorization": "Bearer {上記で取得したトークン}",
+                "Accept": "application/json"
+            }
+        }
+    }
+}
 ```

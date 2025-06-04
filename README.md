@@ -11,26 +11,59 @@
 ## ディレクトリ構成
 
 ```bash
-
-├── /.devcontainer
+├── /.devcontainer                     # VS Code Dev Container設定
+│   ├── devcontainer.json
+│   ├── init.sh                        # AWS SSO Profile設定
+│   └── github_deployments_delete.sh   # GitHubデプロイメント削除スクリプト
 ├── /.vscode
-│   ├── mcp.json                        # GitHub Copilot Agentモードで使用する際の設定
-│   └── settings.json                   # DevContainer内のVSCode設定
+│   ├── mcp.json                       # MCP Server接続設定（ローカル/リモート）
+│   └── settings.json
 ├── /.github
-│   ├── /workflows                      
-│   └── copilot-instructions.md         # GitHub Copilotのカスタム指示 
+│   ├── /workflows
+│   │   ├── pr-closed-deploy-develop.yml
+│   │   ├── reusable-build-and-push.yml
+│   │   ├── reusable-plan-and-deploy-with-tfc.yml  # HCP Terraform連携デプロイ
+│   │   ├── reusable-update-lambda.yml
+│   │   └── reusable-validate-environment-secrets.yml   # 環境変数検証
+│   └── copilot-instructions.md       # GitHub Copilotのカスタム指示 
 ├── /terraform
-│   ├── /env                 # 環境ごとの設定
-│   │   ├── /dev             # dev環境向け
-│   │   └── /prod            # prod環境向け
-│   └── /modules             # 再利用可能モジュール定義
-│       ├── /vpc             
+│   ├── /env                          # 環境別設定
+│   │   └── /dev
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── terraform.tf          # バックエンド設定（HCP Terraform）
+│   └── /modules                      # 再利用可能モジュール定義
+│       ├── /api_gateway              # API Gateway (HTTP) with OAuth2認証
+│       ├── /cognito                  # AWS Cognito OAuth2設定
 │       ├── /lambda
-│       └── ...
-├── /sam                     # aws sam cli版 (未完成)
-├── /src                     # mcp serverのソースコード
-├── /src                     # mcp serverのソースコード
-└── README.md                # このファイル
+│       ├── /lambda_layer
+│       ├── /s3
+│       ├── /vpc                      # VPCとプライベートサブネット
+│       ├── /vpc_endpoint_lambda      # Lambda用VPCエンドポイント
+│       └── /vpc_endpoint_s3          # S3用VPCエンドポイント
+├── /sam                              # AWS SAM実装（未完成・比較用）
+│   ├── template.yaml
+│   └── samconfig.toml
+├── /src                              # MCP Serverソースコード
+│   ├── main.py                       # FastMCPベースのサーバー実装
+│   ├── pyproject.toml
+│   ├── requirements.txt
+│   ├── uv.lock                       # uv パッケージマネージャーロックファイル
+│   ├── run.sh
+│   └── /deps                         # Lambda Layer用依存関係
+├── .env.sample
+├── .auto.tfvars.sample               # HCP Terraform向け
+├── .gitignore
+├── .pre-commit-config.yaml           # pre-commitフック（Terraform検証）
+├── .terraform-version                # Terraformバージョン指定（1.12.1）
+├── api_connectivity_test.sh          # API接続テストスクリプト
+├── architecture.png
+├── bootstrap.tf                      # HCP Terraform/GitHub OIDCを設定
+├── CLAUDE.md                         # Claude Code用指示ファイル
+├── compose.yml                       # devcontainer用
+├── dockerfile.devcontainer
+├── justfile                          # タスクランナー（make代替）
+└── README.md
 ```
 
 ## 環境構築

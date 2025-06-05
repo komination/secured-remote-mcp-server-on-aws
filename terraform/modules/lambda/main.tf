@@ -10,8 +10,8 @@ module "lambda" {
   runtime       = var.runtime
   publish       = true
   architectures = ["x86_64"]
-  timeout       = 60
-  memory_size   = 256
+  timeout       = var.timeout
+  memory_size   = var.memory_size
 
   layers = concat(
     var.layers,
@@ -55,4 +55,6 @@ module "lambda" {
   vpc_security_group_ids = [var.vpc_security_group_id]
 
   attach_network_policy = true
+
+  reserved_concurrent_executions = var.reserved_concurrent_executions
 }

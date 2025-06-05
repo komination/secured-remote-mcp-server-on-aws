@@ -41,3 +41,15 @@ variable "cognito_scope_read" {
   description = "Read-scope string like api://dev-cognito/read"
   type        = string
 }
+
+variable "throttle_burst_limit" {
+  description = "API Gateway throttle burst limit"
+  type        = number
+  default     = 100
+}
+
+variable "throttle_rate_limit" {
+  description = "API Gateway throttle rate limit (requests per second)"
+  type        = number
+  default     = 50
+}

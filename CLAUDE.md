@@ -41,11 +41,17 @@ cd /app/src && python main.py
 
 ### Testing API Connectivity
 ```bash
-# Get OAuth token from AWS Secrets Manager
+# Get OAuth token from AWS Secrets Manager (defaults to "admin" AWS profile)
 just get-token "secret-name" "aws-profile"
 
 # Test full API connectivity (token + API call)
 just test-api "secret-name" "https://api-endpoint.execute-api.ap-northeast-1.amazonaws.com/mcp/" "aws-profile"
+```
+
+### GitHub Operations
+```bash
+# Create a pull request using GitHub CLI
+just pr-create "head_branch" "base_branch" "title"
 ```
 
 ### Linting and Validation
@@ -68,8 +74,10 @@ terraform validate
 
 ### Key Components
 1. **MCP Server** (`src/main.py`): FastMCP-based server exposing tools:
-   - `list_files`: Lists S3 objects with prefix filtering
+   - `list_files`: Lists S3 objects with prefix filtering (optional `bucket` parameter, defaults to `BUCKET_NAME` env var)
    - `add`, `multiply`: Example calculation tools
+   - Local development URL: `http://127.0.0.1:8080/mcp`
+   - Configured for stateless HTTP with JSON responses
 
 2. **Infrastructure Modules**:
    - `vpc`: Creates isolated network with private subnets
@@ -98,6 +106,67 @@ The Lambda function expects:
 ## Important Notes
 
 - The project uses HCP Terraform for remote state management
-- AWS profiles are required for local AWS CLI operations
+- AWS profiles are required for local AWS CLI operations (default: "admin")
 - Pre-commit hooks ensure Terraform code quality
 - The SAM directory should be ignored (it's an incomplete comparison implementation)
+- Architecture diagram available at `/app/architecture.png`
+
+## VS Code MCP Client Configuration
+
+Example configuration for VS Code MCP extension (mcp.json):
+```json
+{
+  "name": "secured-mcp-on-aws",
+  "description": "Secured MCP Server on AWS",
+  "url": "https://your-api-endpoint.execute-api.ap-northeast-1.amazonaws.com/mcp/",
+  "apiKey": "Bearer YOUR_OAUTH_TOKEN",
+  "customHeaders": {
+    "Content-Type": "application/json"
+  }
+}
+```
+
+## Terraform Outputs
+
+Key outputs after deployment:
+- `api_gateway_endpoint`: API endpoint URL for MCP server access
+- `cognito_client_secret_name`: AWS Secrets Manager secret containing OAuth credentials
+- `lambda_function_name`: Name of the deployed Lambda function
+- `lambda_layer_arn`: ARN of Lambda layer with Python dependencies
+
+Access outputs: `cd /app/terraform/env/dev && terraform output`
+
+## CI/CD Pipeline
+
+GitHub Actions workflow (`/.github/workflows/deploy.yml`):
+- **Trigger**: On PR close to develop branch
+- **Authentication**: OIDC (no stored AWS credentials)
+- **Process**: Builds Lambda artifacts → Uploads to S3 → Triggers HCP Terraform run
+- **Security**: Uses least-privilege IAM role with resource-scoped permissions
+
+## Python Dependencies
+
+- **Python Version**: 3.13+
+- **Package Manager**: uv (fast Python package manager)
+- **Key Dependencies**:
+  - FastMCP 2.3.5+ (MCP framework)
+  - boto3 (AWS SDK)
+  - uvicorn (ASGI server for local development)
+- **Dependency Management**: Use `just pip-export` to sync uv.lock to requirements.txt
+
+## IAM Security
+
+The project implements minimal IAM permissions following the principle of least privilege:
+
+### HCP Terraform Role
+- **Custom Policy**: `hcp-terraform-policy-${repo_name}`
+- **Permissions**: Only services used by Terraform modules (API Gateway, Lambda, S3, VPC, Cognito, Secrets Manager, limited IAM)
+- **Replaces**: AdministratorAccess (previous over-privileged access)
+
+### GitHub Actions Role
+- **Custom Policy**: `github-actions-policy-${repo_name}`
+- **Permissions**: Limited to CI/CD operations (S3 artifact upload/download, Lambda function updates)
+- **Resource Scope**: Only resources matching the repository name pattern
+- **Replaces**: AdministratorAccess (previous over-privileged access)
+
+This security enhancement significantly reduces the attack surface while maintaining full functionality.

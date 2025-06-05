@@ -152,7 +152,7 @@ resource "aws_iam_role" "github_actions" {
     Statement = [
       {
         Effect    = "Allow",
-        Principal = { Federated = "arn:aws:iam::448866508124:oidc-provider/token.actions.githubusercontent.com" },
+        Principal = { Federated = local.github_actions_oidc_provider_arn },
         Action    = "sts:AssumeRoleWithWebIdentity",
         Condition = {
           StringEquals = {
@@ -165,14 +165,135 @@ resource "aws_iam_role" "github_actions" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "hcp_terraform_policy" {
-  role       = aws_iam_role.hcp_terraform_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+# HCP Terraform用最小権限ポリシー
+resource "aws_iam_policy" "hcp_terraform_policy" {
+  name        = "hcp-terraform-policy-${var.repo_name}"
+  description = "Minimal permissions for HCP Terraform to manage MCP infrastructure"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CoreInfrastructureServices"
+        Effect = "Allow"
+        Action = [
+          "sts:GetCallerIdentity",
+          "sts:AssumeRole",
+          "apigateway:*",
+          "lambda:*",
+          "s3:*",
+          "ec2:*",
+          "cognito-idp:*",
+          "secretsmanager:*",
+          "logs:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMReadOperations"
+        Effect = "Allow"
+        Action = [
+          "iam:Get*",
+          "iam:List*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "IAMWriteOperationsForLambda"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:PassRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
-resource "aws_iam_role_policy_attachment" "github_actions_admin" {
+resource "aws_iam_role_policy_attachment" "hcp_terraform_policy" {
+  role       = aws_iam_role.hcp_terraform_role.name
+  policy_arn = aws_iam_policy.hcp_terraform_policy.arn
+}
+
+# GitHub Actions用最小権限ポリシー
+resource "aws_iam_policy" "github_actions_policy" {
+  name        = "github-actions-policy-${var.repo_name}"
+  description = "Minimal permissions for GitHub Actions CI/CD pipeline"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3ArtifactManagement"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:PutObjectAcl",
+          "s3:GetObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::*${var.repo_name}*/lambda/*",
+          "arn:aws:s3:::*${var.repo_name}*/lambda-layers/*",
+          "arn:aws:s3:::*artifacts*/lambda/*",
+          "arn:aws:s3:::*artifacts*/lambda-layers/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "s3:ExistingObjectTag/Environment" = "develop"
+          }
+        }
+      },
+      {
+        Sid    = "S3ArtifactManagementFallback"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:PutObjectAcl",
+          "s3:GetObject"
+        ]
+        Resource = [
+          "arn:aws:s3:::*${var.repo_name}*/lambda/*",
+          "arn:aws:s3:::*${var.repo_name}*/lambda-layers/*",
+          "arn:aws:s3:::*artifacts*/lambda/*",
+          "arn:aws:s3:::*artifacts*/lambda-layers/*"
+        ]
+      },
+      {
+        Sid    = "LambdaLayerManagement"
+        Effect = "Allow"
+        Action = [
+          "lambda:PublishLayerVersion"
+        ]
+        Resource = [
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:layer:*${var.repo_name}*"
+        ]
+      },
+      {
+        Sid    = "LambdaFunctionUpdate"
+        Effect = "Allow"
+        Action = [
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:UpdateFunctionCode"
+        ]
+        Resource = [
+          "arn:aws:lambda:*:${data.aws_caller_identity.current.account_id}:function:*${var.repo_name}*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_policy" {
   role       = aws_iam_role.github_actions.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+  policy_arn = aws_iam_policy.github_actions_policy.arn
 }
 
 # =============================================================================
@@ -302,4 +423,15 @@ output "dev_workspace_id" {
 output "prod_workspace_id" {
   value       = tfe_workspace.prod.id
   description = "ID of the prod workspace"
+}
+
+# IAM Policy ARNs
+output "hcp_terraform_policy_arn" {
+  value       = aws_iam_policy.hcp_terraform_policy.arn
+  description = "ARN of the HCP Terraform minimal permissions policy"
+}
+
+output "github_actions_policy_arn" {
+  value       = aws_iam_policy.github_actions_policy.arn
+  description = "ARN of the GitHub Actions minimal permissions policy"
 }

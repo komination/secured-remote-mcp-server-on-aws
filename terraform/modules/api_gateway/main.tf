@@ -12,6 +12,11 @@ module "api_gateway" {
   create_domain_name    = false
   create_domain_records = false
 
+  stage_default_route_settings = {
+    throttling_burst_limit = var.throttle_burst_limit
+    throttling_rate_limit  = var.throttle_rate_limit
+  }
+
   authorizers = {
     cognito = {
       name             = "${var.name}-cognito"

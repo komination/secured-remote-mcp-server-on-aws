@@ -51,3 +51,21 @@ variable "environment_variables" {
   type        = map(string)
   default     = {}
 }
+
+variable "memory_size" {
+  description = "Lambda関数のメモリサイズ（MB）"
+  type        = number
+  default     = 256
+}
+
+variable "timeout" {
+  description = "Lambda関数のタイムアウト（秒）"
+  type        = number
+  default     = 60
+}
+
+variable "reserved_concurrent_executions" {
+  description = "Lambda関数の予約済み同時実行数"
+  type        = number
+  default     = -1 # -1 means no specific limit
+}

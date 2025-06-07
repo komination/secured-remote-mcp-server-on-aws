@@ -1,11 +1,11 @@
 services:
   app:
     build:
-      context: .
+      context: .devcontainer
       dockerfile: dockerfile.devcontainer
       args: 
-        - USER=$USER
-        - UID=$UID
+        - USER=${USER}
+        - UID=${UID}
     # network_mode: host
     extra_hosts:
       - "localhost:host-gateway"

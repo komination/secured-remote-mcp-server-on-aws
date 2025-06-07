@@ -1,6 +1,7 @@
 FROM public.ecr.aws/docker/library/python:3.13.3-bookworm
 
-ARG USER UID
+ARG USER
+ARG UID
 WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/

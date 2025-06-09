@@ -4,7 +4,7 @@ services:
       context: .devcontainer
       dockerfile: dockerfile.devcontainer
       args: 
-        - USER=${USER}
+        - USER=${USER_NAME}
         - UID=${UID}
     # network_mode: host
     extra_hosts:

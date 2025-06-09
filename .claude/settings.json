@@ -2,12 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(ls:*)",
+      "Bash(mkdir:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
       "Bash(terraform fmt:*)",
       "Bash(terraform validate:*)",
       "Bash(terraform init:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

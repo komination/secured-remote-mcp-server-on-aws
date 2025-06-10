@@ -45,3 +45,4 @@ terraform.rc
 builds/
 .aws-sam/
 *.zip
+settings.local.json

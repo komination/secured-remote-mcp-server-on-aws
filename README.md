@@ -1,10 +1,21 @@
 # secured-remote-mcp-server-on-aws
 
-認証付きのAPI Gateway (HTTP) をエントリポイントとし、VPC内に配置されたプライベートなLambdaを経由してS3にアクセスすることで、安全にMCP Serverを公開するソリューションです</br>
-</br>
-本リポジトリでは、S3のファイルリストを返す簡易的な例を示していますが、Lambdaに様々なリソースにアクセスするMCP Serverを実装することで多様な用途に対応できます</br>
-</br>
-※TerraformやMCPのキャッチアップを目的に、プロダクション環境へのデプロイを想定したユースケースでポートフォリオ開発を進めています。なお、CloudTrailのようにコストが高くなるサービスの構築は一旦対象外としています。
+VPC内のプライベートなLambdaに配置されたMCP Serverを、OAuth認証付きAPI Gateway経由でセキュアに公開するリポジトリです
+
+特徴:
+
+- MCP Server (Streamble HTTP)をアクセス保護しながらパブリックにデプロイ可能
+- エントリポイントとなるAPI Gatewayは、CognitoをAuthorizerとしてクライアント認証で保護
+- Terraformによる宣言的な環境管理
+- GitHub ActionsとHCP Terraformを活用した自動デプロイ
+- Devcontainerによる統一された開発環境の共有
+- Claude CodeとGithub Copilotの利用、AWS公式MCP Serverを利用した最新情報の追従
+
+開発動機:
+
+TerraformやMCPのキャッチアップを目的にポートフォリオとして開発を進めています
+
+CloudTrailやWAFなどコストが高くなるリソースは一旦対象外としています
 
 ![アーキテクチャ図](./architecture.png)
 
@@ -12,57 +23,60 @@
 
 ```bash
 ├── /.devcontainer                     # VS Code Dev Container設定
-│   ├── devcontainer.json
-│   ├── init.sh                        # AWS SSO Profile設定
-│   └── github_deployments_delete.sh   # GitHubデプロイメント削除スクリプト
-├── /.vscode
-│   ├── mcp.json                       # MCP Server接続設定（ローカル/リモート）
-│   └── settings.json
+│   ├── api_connectivity_test.sh       # API接続テストスクリプト
+│   ├── devcontainer.json              
+│   ├── dockerfile.devcontainer        
+│   ├── github_deployments_delete.sh   # GitHubデプロイメント削除スクリプト
+│   └── init.sh                        # Devcontainer内AWS SSO Profile用意スクリプト
 ├── /.github
 │   ├── /workflows
-│   │   ├── pr-closed-deploy-develop.yml
-│   │   ├── reusable-build-and-push.yml
-│   │   ├── reusable-plan-and-deploy-with-tfc.yml  # HCP Terraform連携デプロイ
-│   │   ├── reusable-update-lambda.yml
-│   │   └── reusable-validate-environment-secrets.yml   # 環境変数検証
-│   └── copilot-instructions.md       # GitHub Copilotのカスタム指示 
+│   │   ├── pr-closed-deploy-develop.yml             # developブランチへのPRクローズ時デプロイ
+│   │   ├── reusable-build-and-push.yml              
+│   │   ├── reusable-plan-and-deploy-with-tfc.yml    # HCP Terraform run
+│   │   ├── reusable-update-lambda.yml                # Lambda更新処理
+│   │   └── reusable-validate-environment-secrets.yml # 環境変数検証
+│   └── copilot-instructions.md       # GitHub Copilotカスタム指示
+├── /.vscode
+│   ├── mcp.json                       # MCP Server接続設定
+│   └── settings.json                  
 ├── /terraform
-│   ├── /env                          # 環境別設定
-│   │   └── /dev
-│   │       ├── main.tf
-│   │       ├── variables.tf
-│   │       └── terraform.tf          # バックエンド設定（HCP Terraform）
-│   └── /modules                      # 再利用可能モジュール定義
-│       ├── /api_gateway              # API Gateway (HTTP) with OAuth2認証
-│       ├── /cognito                  # AWS Cognito OAuth2設定
-│       ├── /lambda
-│       ├── /lambda_layer
-│       ├── /s3
-│       ├── /vpc                      # VPCとプライベートサブネット
-│       ├── /vpc_endpoint_lambda      # Lambda用VPCエンドポイント
-│       └── /vpc_endpoint_s3          # S3用VPCエンドポイント
-├── /sam                              # AWS SAM実装（未完成・比較用）
-│   ├── template.yaml
-│   └── samconfig.toml
-├── /src                              # MCP Serverソースコード
-│   ├── main.py                       # FastMCPベースのサーバー実装
-│   ├── pyproject.toml
-│   ├── requirements.txt
-│   ├── uv.lock                       # uv パッケージマネージャーロックファイル
-│   ├── run.sh
-│   └── /deps                         # Lambda Layer用依存関係
-├── .env.sample
-├── .auto.tfvars.sample               # HCP Terraform向け
+│   ├── /env                           # 環境別設定
+│   │   ├── /dev                       # 開発環境
+│   │   │   ├── /dummy                 # Lambda初期デプロイ時のダミー
+│   │   │   ├── main.tf                # リソース定義
+│   │   │   ├── dummy.tf               # ダミーZip作成用
+│   │   │   ├── outputs.tf             # HCP Terraform上で出力
+│   │   │   ├── terraform.tf           # バックエンド設定（HCP Terraform）
+│   │   │   └── variables.tf           # 変数定義
+│   │   └── /prod                      # 本番環境（同構成）
+│   └── /modules                       # 再利用可能モジュール
+│       ├── /api_gateway               
+│       ├── /cognito                   
+│       ├── /lambda                    
+│       ├── /lambda_layer              
+│       ├── /s3                        
+│       ├── /vpc                       
+│       ├── /vpc_endpoint_lambda       
+│       └── /vpc_endpoint_s3           
+├── /sam                               # AWS SAM実装（比較検証用）
+│   ├── samconfig.toml
+│   └── template.yaml
+├── /src                               # MCP Serverアプリケーション
+│   ├── main.py                        # FastMCP実装
+│   ├── pyproject.toml                 # Python プロジェクト設定
+│   ├── requirements.txt               # pip依存関係
+│   ├── run.sh                         # 起動スクリプト
+│   └── uv.lock                        
+├── .auto.tfvars.sample                # HCP Terraform変数
+├── .env.sample                        # 環境変数サンプル
 ├── .gitignore
-├── .pre-commit-config.yaml           # pre-commitフック（Terraform検証）
-├── .terraform-version                # Terraformバージョン指定（1.12.1）
-├── api_connectivity_test.sh          # API接続テストスクリプト
-├── architecture.png
-├── bootstrap.tf                      # HCP Terraform/GitHub OIDCを設定
-├── CLAUDE.md                         # Claude Code用指示ファイル
-├── compose.yml                       # devcontainer用
-├── dockerfile.devcontainer
-├── justfile                          # タスクランナー（make代替）
+├── .pre-commit-config.yaml            
+├── .terraform-version                 # Terraformバージョン（1.12.1）
+├── architecture.png                   # アーキテクチャ図
+├── bootstrap.tf                       # HCP Terraform & OIDC 初期設定
+├── CLAUDE.md                          # Claude Code用プロジェクト指示
+├── compose.yml                        # Devcontainer用Docker Compose設定
+├── justfile                           # タスクランナー定義
 └── README.md
 ```
 
@@ -70,9 +84,9 @@
 
 前提条件:
 
-1. devcontainer実行環境
-1. GitHubアカウント連携が済んでいるHCP Terraform アカウント
-1. AWSアカウントと紐づいたIAM Identity Centerユーザー
+- Devcontainer実行可能環境（VSCode推奨）
+- HCP Terraformアカウント（GitHubアカウント連携済み）
+- AWS IAM Identity Centerユーザー
 
 .env作成:
 
@@ -138,4 +152,18 @@ just test-api "my-api-secret" "https://{apiエンドポイント名}.execute-api
         }
     }
 }
+```
+
+## 特筆点
+
+- API GatewayはServer-Sent Events (SSE) やHTTPストリーミングレスポンスに対応していないため、全結果をバッファリングして一括返却する必要がある
+
+``` python
+from fastmcp import FastMCP
+
+mcp = FastMCP(
+    "remote-mcp-server",
+    stateless_http=True,
+    json_response=True # 完全なJSONレスポンスを一度に返すために必須
+)
 ```

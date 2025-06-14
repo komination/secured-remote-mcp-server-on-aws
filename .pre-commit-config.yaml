@@ -5,6 +5,7 @@ repos:
       - id: terraform_fmt
         args: 
           - --hook-config=--parallelism-ci-cpu-cores=1
+
       - id: terraform_validate
         args:
           - --hook-config=--parallelism-ci-cpu-cores=1

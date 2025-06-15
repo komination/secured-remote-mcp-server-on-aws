@@ -14,8 +14,11 @@ module "lambda" {
   memory_size   = var.memory_size
 
   layers = concat(
+    [
+      "arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:25",
+      "arn:aws:serverlessrepo:${data.aws_region.current.name}:057560766410:applications/aws-lambda-powertools-python-layer-v3-python313-x86-64"
+    ],
     var.layers,
-    ["arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:25"]
   )
 
   environment_variables = merge(

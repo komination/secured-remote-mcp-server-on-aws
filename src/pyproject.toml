@@ -8,4 +8,5 @@ dependencies = [
     "boto3>=1.38.9",
     "fastmcp>=2.3.5",
     "uvicorn>=0.34.2",
+    "aws-lambda-powertools>=3.14.0",
 ]

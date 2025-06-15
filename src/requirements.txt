@@ -12,6 +12,10 @@ anyio==4.9.0 \
     #   mcp
     #   sse-starlette
     #   starlette
+aws-lambda-powertools==3.14.0 \
+    --hash=sha256:11e4d8a2c7855d1f3109a15c4ed6250465ae5e2e2762b42b99b67352cf246f1a \
+    --hash=sha256:4a36dbf44b4e0648c5e0e097ecbde974f18524c3096f50ee0f1ce7dcf0d64ef0
+    # via src
 boto3==1.38.20 \
     --hash=sha256:0494bafa771561c02ae5926143ce69b6ee4017f11ced22d0293a8372acb7472a \
     --hash=sha256:aa1424213678a249fe828fb9345deac5e33f9a2266fd1b23ec72e02857b018a2
@@ -76,6 +80,7 @@ jmespath==1.0.1 \
     --hash=sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980 \
     --hash=sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe
     # via
+    #   aws-lambda-powertools
     #   boto3
     #   botocore
 markdown-it-py==3.0.0 \
@@ -183,6 +188,7 @@ typing-extensions==4.13.2 \
     --hash=sha256:a439e7c04b49fec3e5d3e2beaa21755cadbbdc391694e28ccdd36ca4a1408f8c \
     --hash=sha256:e6c81219bd689f51865d9e372991c540bda33a0379d5573cddb9a3a23f7caaef
     # via
+    #   aws-lambda-powertools
     #   pydantic
     #   pydantic-core
     #   typer

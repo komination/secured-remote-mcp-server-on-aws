@@ -16,7 +16,7 @@ module "lambda" {
   layers = concat(
     [
       "arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:25",
-      "arn:aws:serverlessrepo:${data.aws_region.current.name}:057560766410:applications/aws-lambda-powertools-python-layer-v3-python313-x86-64"
+      "arn:aws:lambda:${data.aws_region.current.name}:017000801446:layer:AWSLambdaPowertoolsPythonV3-python313-x86_64:16"
     ],
     var.layers,
   )
